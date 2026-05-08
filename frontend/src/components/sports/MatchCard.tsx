@@ -2,8 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 
-export default function MatchCard({ market }) {
-    const [odds, setOdds] = useState([]);
+interface Outcome {
+    name: string;
+    odds: number;
+}
+
+export default function MatchCard({ market }: { market: any }) {
+    const [odds, setOdds] = useState<Outcome[]>([]);
 
     useEffect(() => {
         const fetchOdds = async () => {

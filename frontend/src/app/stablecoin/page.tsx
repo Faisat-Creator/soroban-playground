@@ -52,11 +52,11 @@ interface ContractStatus {
 
 export default function StablecoinPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [metrics, setMetrics] = useState<StablecoinMetrics | null>(null);
-  const [priceHistory, setPriceHistory] = useState<PricePoint[] | null>(null);
-  const [rebaseHistory, setRebaseHistory] = useState<RebaseEvent[] | null>(null);
-  const [reserveInfo, setReserveInfo] = useState<ReserveInfo | null>(null);
-  const [contractStatus, setContractStatus] = useState<ContractStatus | null>(null);
+  const [metrics, setMetrics] = useState<StablecoinMetrics | undefined>(undefined);
+  const [priceHistory, setPriceHistory] = useState<PricePoint[] | undefined>(undefined);
+  const [rebaseHistory, setRebaseHistory] = useState<RebaseEvent[] | undefined>(undefined);
+  const [reserveInfo, setReserveInfo] = useState<ReserveInfo | undefined>(undefined);
+  const [contractStatus, setContractStatus] = useState<ContractStatus | undefined>(undefined);
 
   useEffect(() => {
     // Fetch data from API

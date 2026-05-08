@@ -21,7 +21,7 @@ interface Analytics {
 
 export default function SportsPage() {
     const [markets, setMarkets] = useState<Market[]>([]);
-    const [analytics, setAnalytics] = useState<Analytics | null>(null);
+    const [analytics, setAnalytics] = useState<Analytics | undefined>(undefined);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
