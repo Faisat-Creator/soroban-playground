@@ -34,7 +34,7 @@ const SearchPage: React.FC = () => {
     hasNext: false,
     hasPrev: false
   });
-  const [meta, setMeta] = useState<SearchMeta | null>(null);
+  const [meta, setMeta] = useState<SearchMeta | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingFacets, setIsLoadingFacets] = useState(false);
   const [sortBy, setSortBy] = useState('relevance');
