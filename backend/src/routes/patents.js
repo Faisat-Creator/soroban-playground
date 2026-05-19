@@ -21,9 +21,9 @@
  */
 
 import express from 'express';
-import { asyncHandler, createHttpError } from '../../middleware/errorHandler.js';
-import { rateLimitMiddleware } from '../../middleware/rateLimiter.js';
-import * as patentService from '../../services/patentService.js';
+import { asyncHandler, createHttpError } from '../middleware/errorHandler.js';
+import { rateLimitMiddleware } from '../middleware/rateLimiter.js';
+import * as patentService from '../services/patentService.js';
 
 const router = express.Router();
 

@@ -5,6 +5,9 @@
   "author": "Ayomide (Maintainer) & Open Source Contributors",
   "license": "MIT",
   "private": true,
+  "overrides": {
+    "graphql": "^16.13.2"
+  },
   "workspaces": [
     "frontend",
     "backend"

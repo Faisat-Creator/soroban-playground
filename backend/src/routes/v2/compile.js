@@ -1,6 +1,7 @@
 import express from 'express';
 import { asyncHandler, createHttpError } from '../../middleware/errorHandler.js';
 import { sanitizeDependenciesInput } from '../compile_utils.js';
+import { rateLimitMiddleware } from '../../middleware/rateLimiter.js';
 import {
   compileQueued,
   compileBatch,
@@ -11,6 +12,7 @@ const router = express.Router();
 
 router.post(
   '/',
+  rateLimitMiddleware('compile'),
   asyncHandler(async (req, res, next) => {
     const { code, dependencies } = req.body || {};
     if (!code) {
@@ -56,6 +58,7 @@ router.post(
 
 router.post(
   '/batch',
+  rateLimitMiddleware('compile'),
   asyncHandler(async (req, res, next) => {
     const { contracts } = req.body || {};
     if (!Array.isArray(contracts) || contracts.length === 0) {

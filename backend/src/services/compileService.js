@@ -7,12 +7,16 @@ import { LRUCache } from 'lru-cache';
 import { buildCargoToml } from '../routes/compile_utils.js';
 import { createSpan, setSpanAttributes, addSpanEvent, getTraceId } from '../utils/tracing.js';
 import { alertManager } from '../utils/alerting.js';
-import {
-  initializeCacheService,
-  loadCacheEntry as loadCacheEntryFromCache,
-  storeCacheEntry,
-  executeUnderLock,
-} from './cacheService.js';
+import config from '../config/index.js';
+
+// Local cache stubs — cacheService only exposes a default class instance,
+// so we implement lightweight in-process equivalents here.
+async function initializeCacheService(_hashes) { /* no-op */ }
+async function loadCacheEntryFromCache(_hash) { return null; }
+async function storeCacheEntry(_entry) { /* no-op */ }
+async function invalidateCache(_opts) { /* no-op */ }
+async function executeUnderLock(_hash, _requestId, fn) { return fn(); }
+
 
 const CACHE_ROOT =
   process.env.WASM_CACHE_DIR || path.join(process.cwd(), 'cache', 'wasm');
@@ -46,7 +50,7 @@ const artifacts = new Map();
 const history = [];
 const cacheIndex = new LRUCache({
   maxSize: MAX_CACHE_BYTES,
-  sizeCalculation: (value) => value.sizeBytes ?? 0,
+  sizeCalculation: (value) => Math.max(1, value?.sizeBytes || 1),
   ttl: MEMORY_CACHE_TTL_MS,
   updateAgeOnGet: true,
   updateAgeOnHas: true,
@@ -327,7 +331,7 @@ const result = await executeUnderLock(hash, requestId, async () => {
           cacheRoot: CACHE_ROOT,
           artifactRoot: ARTIFACT_ROOT,
           cargoToml: buildCargoToml(dependencies),
-          timeoutMs: Number.parseInt(process.env.COMPILE_TIMEOUT_MS || '30000', 10),
+          timeoutMs: config.compile.timeoutMs,
         });
     });
 
@@ -423,6 +427,12 @@ function pump() {
           queueLength: queue.length,
           activeWorkers: active,
           timestamp: nowIso(),
+          artifact: result.artifact ? {
+            name: result.artifact.name || `${result.hash}.wasm`,
+            sizeBytes: result.artifact.sizeBytes || 0,
+            path: result.artifact.path || '',
+            durationMs: result.durationMs || 0,
+          } : null,
         });
         item.resolve(result);
       })

@@ -11,6 +11,7 @@ import v2Identity from './v2/identity.js';
 import eventsRouter from './events.js';
 import patentsRouter from './patents.js';
 import tokenBurnRouter from './tokenBurn.js';
+import oracleRouter from './oracle.js';
 import { versionTransformer, requestTransformerV2 } from '../middleware/versionTransformer.js';
 import { rateLimitMiddleware } from '../middleware/rateLimiter.js';
 
@@ -33,7 +34,7 @@ router.get('/versions', (req, res) => {
 // v1 Routes
 const v1Router = express.Router();
 v1Router.use(versionTransformer('v1'));
-v1Router.use('/compile', rateLimitMiddleware('compile'), v1Compile);
+v1Router.use('/compile', v1Compile);
 v1Router.use('/deploy', rateLimitMiddleware('deploy'), v1Deploy);
 v1Router.use('/invoke', rateLimitMiddleware('invoke'), v1Invoke);
 v1Router.use('/identity', rateLimitMiddleware('invoke'), v1Identity);
@@ -42,7 +43,7 @@ v1Router.use('/identity', rateLimitMiddleware('invoke'), v1Identity);
 const v2Router = express.Router();
 v2Router.use(versionTransformer('v2'));
 v2Router.use(requestTransformerV2); // Optional: transform v1-style requests to v2 if needed (e.g., if we had a single implementation)
-v2Router.use('/compile', rateLimitMiddleware('compile'), v2Compile);
+v2Router.use('/compile', v2Compile);
 v2Router.use('/deploy', rateLimitMiddleware('deploy'), v2Deploy);
 v2Router.use('/invoke', rateLimitMiddleware('invoke'), v2Invoke);
 v2Router.use('/identity', rateLimitMiddleware('invoke'), v2Identity);
@@ -53,7 +54,7 @@ router.use('/v2', v2Router);
 router.use('/oracle', oracleRouter);
 
 // Default to v1 for backward compatibility (requests to /api/compile, etc.)
-router.use('/compile', versionTransformer('v1'), rateLimitMiddleware('compile'), v1Compile);
+router.use('/compile', versionTransformer('v1'), v1Compile);
 router.use('/deploy', versionTransformer('v1'), rateLimitMiddleware('deploy'), v1Deploy);
 router.use('/invoke', versionTransformer('v1'), rateLimitMiddleware('invoke'), v1Invoke);
 router.use('/identity', versionTransformer('v1'), rateLimitMiddleware('invoke'), v1Identity);

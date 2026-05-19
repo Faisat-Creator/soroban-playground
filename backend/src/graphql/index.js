@@ -2,7 +2,9 @@
 // Includes: DataLoader per-request, query complexity analysis, field-level auth,
 // Redis-backed caching, GraphiQL playground, and subscription support.
 
-import { createYoga, createSchema } from 'graphql-yoga';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { createYoga, createSchema } = require('graphql-yoga');
 import { typeDefs } from './schema.js';
 import { resolvers } from './resolvers.js';
 import { createLoaders } from './dataloaders.js';
@@ -89,4 +91,9 @@ query Health {
   });
 
   return yoga;
+}
+
+export function setupGraphQL(app) {
+  const yoga = createGraphQLServer();
+  app.use(yoga.graphqlEndpoint, yoga);
 }

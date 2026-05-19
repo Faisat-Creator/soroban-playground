@@ -4,6 +4,7 @@
 import redisService from '../services/redisService.js';
 import { getStrategy } from '../services/rateLimitStrategies.js';
 import { createHttpError } from './errorHandler.js';
+import config from '../config/index.js';
 
 /**
  * Production-grade Rate Limiter Middleware
@@ -75,11 +76,10 @@ export const rateLimiter = (options = {}) => {
  * @returns {Function} Express middleware function
  */
 export const rateLimitMiddleware = (configKey) => {
-  const config = require('../config/index.js').default;
-  const rateLimitConfig = config.rateLimit[configKey];
+  const rateLimitConfig = config.rateLimit[configKey] || config.rateLimit['global'];
   
   if (!rateLimitConfig) {
-    throw new Error(`Rate limit config not found for key: ${configKey}`);
+    throw new Error(`Rate limit config not found for key: ${configKey} and fallback 'global' also not found`);
   }
 
   return rateLimiter({

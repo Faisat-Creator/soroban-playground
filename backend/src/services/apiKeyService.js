@@ -88,7 +88,6 @@ export class ApiKeyService {
     }
 
     // Update last used and usage count
-    const db = getDatabase();
     await db.run(
       `UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP, usage_count = usage_count + 1 WHERE id = ?`,
       [row.id]

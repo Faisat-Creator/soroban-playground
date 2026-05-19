@@ -87,3 +87,7 @@ backend/test_rate_limit.js
 indexer/target/
 *.db
 *.sqlite
+
+# Cache and Data
+backend/cache/
+backend/data/
