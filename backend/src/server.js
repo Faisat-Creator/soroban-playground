@@ -64,7 +64,11 @@ app.use((req, res, next) => {
     const time = diff[0] + diff[1] / 1e9;
     try {
       requestLatency.observe(
-        { method: req.method, route: req.route ? req.route.path : req.path, status: res.statusCode },
+        {
+          method: req.method,
+          route: req.route ? req.route.path : req.path,
+          status: res.statusCode,
+        },
         time
       );
     } catch {

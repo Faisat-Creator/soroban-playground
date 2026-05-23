@@ -1,7 +1,4 @@
-import {
-  OracleService,
-  OracleEvent,
-} from '../../src/services/oracle/index.js';
+import { OracleService, OracleEvent } from '../../src/services/oracle/index.js';
 
 describe('OracleService end-to-end', () => {
   it('reaches consensus and elects exactly one leader for a single proof', async () => {
@@ -40,7 +37,10 @@ describe('OracleService end-to-end', () => {
   });
 
   it('uses a custom submitter when provided', async () => {
-    const submitter = jest.fn(async ({ proofId, vote }) => ({ tx: `tx-${proofId}`, vote }));
+    const submitter = jest.fn(async ({ proofId, vote }) => ({
+      tx: `tx-${proofId}`,
+      vote,
+    }));
     const svc = new OracleService({ nodeCount: 3, threshold: 2, submitter });
     const proof = await svc.submitProofAndWait({ payload: 'data' });
     expect(submitter).toHaveBeenCalledTimes(1); // only the leader submits

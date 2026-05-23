@@ -22,8 +22,8 @@ async function testSearchAPI() {
       body: JSON.stringify({
         query: 'decentralized',
         filters: {},
-        pagination: { page: 1, limit: 5 }
-      })
+        pagination: { page: 1, limit: 5 },
+      }),
     });
     const searchData = await searchResponse.json();
     console.log('Search results:', JSON.stringify(searchData, null, 2));
@@ -31,7 +31,9 @@ async function testSearchAPI() {
 
     // Test 3: Autocomplete
     console.log('3. Testing autocomplete...');
-    const autocompleteResponse = await fetch(`${API_BASE}/autocomplete?q=defi&limit=5`);
+    const autocompleteResponse = await fetch(
+      `${API_BASE}/autocomplete?q=defi&limit=5`
+    );
     const autocompleteData = await autocompleteResponse.json();
     console.log('Autocomplete suggestions:', autocompleteData);
     console.log('✅ Autocomplete passed\n');
@@ -51,18 +53,22 @@ async function testSearchAPI() {
       body: JSON.stringify({
         query: '',
         filters: { category: 'DeFi', status: 'active' },
-        pagination: { page: 1, limit: 10 }
-      })
+        pagination: { page: 1, limit: 10 },
+      }),
     });
     const filteredSearchData = await filteredSearchResponse.json();
-    console.log('Filtered search results:', JSON.stringify(filteredSearchData, null, 2));
+    console.log(
+      'Filtered search results:',
+      JSON.stringify(filteredSearchData, null, 2)
+    );
     console.log('✅ Filtered search passed\n');
 
     console.log('🎉 All tests passed! Search API is working correctly.');
-
   } catch (error) {
     console.error('❌ Test failed:', error.message);
-    console.error('Make sure the backend server is running on http://localhost:5000');
+    console.error(
+      'Make sure the backend server is running on http://localhost:5000'
+    );
   }
 }
 

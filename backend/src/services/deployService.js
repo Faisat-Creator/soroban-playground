@@ -7,7 +7,12 @@ import {
   topoSortContracts,
   validateBatchContractsInput,
 } from './deployUtils.js';
-import { createSpan, setSpanAttributes, addSpanEvent, injectTraceContext } from '../utils/tracing.js';
+import {
+  createSpan,
+  setSpanAttributes,
+  addSpanEvent,
+  injectTraceContext,
+} from '../utils/tracing.js';
 import { alertManager } from '../utils/alerting.js';
 
 const DEFAULT_TIMEOUT_MS = 30000;
@@ -118,7 +123,7 @@ function deployContract(contract, { signal, onProgress } = {}) {
       const durationMs = Date.now() - startTime;
       setSpanAttributes(span, {
         'deploy.duration_ms': durationMs,
-        'deploy.exit_code': err ? (err.code || 1) : 0,
+        'deploy.exit_code': err ? err.code || 1 : 0,
         'deploy.contract_id': result?.contractId,
       });
 
@@ -218,7 +223,12 @@ export async function deployBatchContracts(request, { signal } = {}) {
     });
     writeState(state);
 
-    appendLog({ deploymentId, startedAt, status: 'started', contracts: ordered });
+    appendLog({
+      deploymentId,
+      startedAt,
+      status: 'started',
+      contracts: ordered,
+    });
     emitProgress({
       requestId: request.requestId,
       batchId: deploymentId,
@@ -321,7 +331,7 @@ export async function deployBatchContracts(request, { signal } = {}) {
       };
     } catch (error) {
       setSpanAttributes(span, {
-        'error': true,
+        error: true,
         'error.message': error.message,
       });
       span.setStatus({ code: 2, message: error.message });
@@ -368,4 +378,3 @@ export function getDeploymentState() {
 }
 
 export { deployProgressBus, topoSortContracts };
-

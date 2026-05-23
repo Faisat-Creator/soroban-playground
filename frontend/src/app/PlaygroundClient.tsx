@@ -546,13 +546,17 @@ export default function Home() {
             : "size unavailable"
         } · ${payload.cached ? "cache hit" : "fresh build"}`,
       );
-      setCompileStats((prev) => ({
-        ...prev,
-        cacheHitRate: payload.cached
-          ? Math.min(100, prev.cacheHitRate + 10)
-          : Math.max(0, prev.cacheHitRate - 5),
-        activeWorkers: Math.max(prev.activeWorkers, 1),
-      }));
+      try {
+        const statsRes = await fetch(`${DEFAULT_API_BASE_URL}/api/compile/stats`);
+        if (statsRes.ok) {
+          const statsPayload = await statsRes.json();
+          if (statsPayload.stats) {
+            setCompileStats((prev) => ({ ...prev, ...statsPayload.stats }));
+          }
+        }
+      } catch (err) {
+        // ignore stats fetch errors
+      }
 
       appendLog(`[compile] ${payload.message}`);
       compileLogs.forEach((log) => appendLog(`[cargo] ${log}`));
@@ -2204,8 +2208,6 @@ export default function Home() {
                     {compileStats.activeWorkers}
                   </p>
                 </div>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-300">
                 <div className="rounded-xl border border-white/8 bg-slate-950/50 p-3">
                   <p className="text-slate-500">ETA</p>
                   <p className="mt-1 text-base font-semibold text-slate-100">
@@ -2216,6 +2218,12 @@ export default function Home() {
                   <p className="text-slate-500">Slow Builds</p>
                   <p className="mt-1 text-base font-semibold text-rose-300">
                     {compileStats.slowCompiles}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/8 bg-slate-950/50 p-3">
+                  <p className="text-slate-500">Total Builds</p>
+                  <p className="mt-1 text-base font-semibold text-indigo-300">
+                    {compileStats.totalCompiles}
                   </p>
                 </div>
               </div>
