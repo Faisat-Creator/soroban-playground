@@ -42,6 +42,13 @@ pub enum Error {
     // Trading errors
     InsufficientMargin = 22,
     PositionLiquidated = 23,
+
+    // Price feed errors
+    PriceNotAvailable = 24,
+    LowConfidence = 25,
+
+    // Arithmetic errors
+    Overflow = 26,
 }
 
 /// Synthetic asset structure

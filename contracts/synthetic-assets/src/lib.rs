@@ -260,7 +260,7 @@ impl SyntheticAssetsContract {
         };
 
         set_collateral_position(&env, position_id, &position);
-        increment_position_counter(&env, 1);
+        increment_position_counter(&env, 1)?;
 
         // Update total supply
         let mut asset = get_synthetic_asset(&env, &asset_symbol)?;
@@ -327,8 +327,6 @@ impl SyntheticAssetsContract {
             return Err(Error::InsufficientBalance);
         }
 
-        let price = get_price_internal(&env, &position.asset_symbol)?;
-
         // Calculate collateral to return
         let collateral_to_return = (burn_amount * position.collateral_amount) / position.minted_amount;
 
@@ -338,10 +336,11 @@ impl SyntheticAssetsContract {
         position.last_updated = env.ledger().timestamp();
 
         if position.minted_amount == 0 {
-            // Close position
+            // Full burn: close position, no price/ratio check needed
             remove_collateral_position(&env, position_id);
         } else {
-            // Verify position is still safe
+            // Partial burn: verify remaining position is still safe
+            let price = get_price_internal(&env, &position.asset_symbol)?;
             let ratio = calculate_collateral_ratio(
                 position.collateral_amount,
                 position.minted_amount,
@@ -487,7 +486,7 @@ impl SyntheticAssetsContract {
         };
 
         set_trading_position(&env, position_id, &position);
-        increment_position_counter(&env, 1);
+        increment_position_counter(&env, 1)?;
 
         Ok(position_id)
     }

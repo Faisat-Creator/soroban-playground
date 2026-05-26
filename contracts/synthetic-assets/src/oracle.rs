@@ -37,13 +37,23 @@ pub fn get_price_internal(env: &Env, asset_symbol: &Symbol) -> Result<i128, Erro
     
     // Check if price is stale
     let current_time = env.ledger().timestamp();
-    if current_time > price_data.timestamp + MAX_PRICE_AGE {
-        return Err(Error::StalePrice);
+    // Use checked_add to avoid overflow in timestamp arithmetic
+    match price_data.timestamp.checked_add(MAX_PRICE_AGE) {
+        Some(expiry) => {
+            if current_time > expiry {
+                return Err(Error::StalePrice);
+            }
+        }
+        None => return Err(Error::StalePrice),
     }
 
-    // Check confidence
     if price_data.confidence < MIN_CONFIDENCE {
-        return Err(Error::StalePrice);
+        return Err(Error::LowConfidence);
+    }
+
+    // Reject invalid price values stored in oracle
+    if price_data.price <= 0 {
+        return Err(Error::InvalidPrice);
     }
 
     Ok(price_data.price)
@@ -59,8 +69,9 @@ pub fn validate_price(price: i128, confidence: u32) -> Result<(), Error> {
         return Err(Error::InvalidPrice);
     }
 
+    // Use explicit LowConfidence error for too-low oracle confidence
     if confidence < MIN_CONFIDENCE {
-        return Err(Error::InvalidPrice);
+        return Err(Error::LowConfidence);
     }
 
     Ok(())
@@ -68,20 +79,43 @@ pub fn validate_price(price: i128, confidence: u32) -> Result<(), Error> {
 
 /// Calculate price deviation between two prices (in basis points)
 pub fn calculate_price_deviation(old_price: i128, new_price: i128) -> u32 {
-    if old_price == 0 {
-        return 0;
+    if old_price <= 0 {
+        return u32::MAX;
     }
-    
-    let diff = if new_price > old_price {
-        new_price - old_price
+
+    let diff = if new_price >= old_price {
+        match new_price.checked_sub(old_price) {
+            Some(v) => v,
+            None => return u32::MAX,
+        }
     } else {
-        old_price - new_price
+        match old_price.checked_sub(new_price) {
+            Some(v) => v,
+            None => return u32::MAX,
+        }
     };
 
-    ((diff * 10000) / old_price) as u32
+    // Multiply then divide with checked ops to avoid overflow
+    let scaled = match diff.checked_mul(10000) {
+        Some(v) => match v.checked_div(old_price) {
+            Some(d) => d,
+            None => return u32::MAX,
+        },
+        None => return u32::MAX,
+    };
+
+    if scaled > u32::MAX as i128 {
+        u32::MAX
+    } else {
+        scaled as u32
+    }
 }
 
 /// Check if price deviation is within acceptable bounds
 pub fn is_price_valid_deviation(old_price: i128, new_price: i128, max_deviation: u32) -> bool {
-    calculate_price_deviation(old_price, new_price) <= max_deviation
+    let dev = calculate_price_deviation(old_price, new_price);
+    if dev == u32::MAX {
+        return false;
+    }
+    dev <= max_deviation
 }

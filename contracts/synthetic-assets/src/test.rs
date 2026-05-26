@@ -96,6 +96,76 @@ fn test_initialize_already_initialized() {
 #[should_panic(expected = "Error(Contract, #17)")]
 fn test_initialize_invalid_collateral_ratio() {
     let (_env, client, admin, oracle, collateral_token) = setup_env();
+
+        // Additional tests for Price Feed Adapter edge cases and errors
+
+        #[test]
+        #[should_panic(expected = "Error(Contract, #24)")]
+        fn test_storage_price_not_available() {
+            let (env, _client, _admin, _oracle, _collateral) = setup_env();
+            let symbol = soroban_sdk::Symbol::new(&env, "MISSING");
+
+            // Directly call storage getter which should return Err(Error::PriceNotAvailable)
+            crate::storage::get_price(&env, &symbol).unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Error(Contract, #25)")]
+        fn test_update_price_low_confidence() {
+            let (env, client, _admin, _oracle, _collateral) = setup_contract();
+            let symbol = soroban_sdk::Symbol::new(&env, "sUSD");
+
+            client.register_synthetic_asset(&symbol, &String::from_str(&env, "Synthetic USD"), &8u32, &100000000i128);
+
+            // Low confidence below MIN_CONFIDENCE should be rejected with LowConfidence
+            client.update_price(&symbol, &105000000i128, &10u32);
+        }
+
+        #[test]
+        #[should_panic(expected = "Error(Contract, #6)")]
+        fn test_update_price_confidence_too_high_invalid() {
+            let (env, client, _admin, _oracle, _collateral) = setup_contract();
+            let symbol = soroban_sdk::Symbol::new(&env, "sUSD");
+
+            client.register_synthetic_asset(&symbol, &String::from_str(&env, "Synthetic USD"), &8u32, &100000000i128);
+
+            // Confidence > 100 should be treated as InvalidPrice
+            client.update_price(&symbol, &105000000i128, &101u32);
+        }
+
+        #[test]
+        #[should_panic(expected = "Error(Contract, #7)")]
+        fn test_get_validated_asset_price_stale() {
+            let (env, client, _admin, _oracle, _collateral) = setup_contract();
+            let symbol = soroban_sdk::Symbol::new(&env, "sUSD");
+
+            client.register_synthetic_asset(&symbol, &String::from_str(&env, "Synthetic USD"), &8u32, &100000000i128);
+
+            // Set an old timestamp to simulate stale price
+            let old_ts = env.ledger().timestamp().saturating_sub(1000u64);
+            let price_data = crate::types::PriceData { price: 100000000i128, timestamp: old_ts, confidence: 100u32 };
+            crate::storage::set_price(&env, &symbol, &price_data);
+
+            // Attempt to get validated price should fail with StalePrice
+            client.get_validated_asset_price(&symbol);
+        }
+
+        #[test]
+        #[should_panic(expected = "Error(Contract, #26)")]
+        fn test_increment_position_counter_overflow() {
+            let (env, _client, _admin, _oracle, _collateral) = setup_env();
+
+            // Force position counter to max and increment
+            crate::storage::set_position_counter(&env, core::u64::MAX);
+            crate::storage::increment_position_counter(&env, 1).unwrap();
+        }
+
+        #[test]
+        fn test_calculate_price_deviation_overflow_case() {
+            // Direct unit test for overflow-handling path in deviation calculation
+            let huge = i128::MAX;
+            let dev = crate::oracle::calculate_price_deviation(1i128, huge);
+            assert_eq!(dev, u32::MAX);
     
     client.initialize(
         &admin,

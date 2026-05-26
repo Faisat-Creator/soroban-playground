@@ -111,11 +111,13 @@ pub fn get_position_counter(env: &Env) -> u64 {
         .unwrap_or(1)
 }
 
-pub fn increment_position_counter(env: &Env, amount: u64) {
+pub fn increment_position_counter(env: &Env, amount: u64) -> Result<(), Error> {
     let current = get_position_counter(env);
+    let next = current.checked_add(amount).ok_or(Error::Overflow)?;
     env.storage()
         .instance()
-        .set(&InstanceKey::PositionCounter, &(current + amount));
+        .set(&InstanceKey::PositionCounter, &next);
+    Ok(())
 }
 
 pub fn set_position_counter(env: &Env, value: u64) {
@@ -218,7 +220,7 @@ pub fn get_price(env: &Env, symbol: &Symbol) -> Result<PriceData, Error> {
     env.storage()
         .temporary()
         .get(&DataKey::Price(symbol.clone()))
-        .ok_or(Error::InvalidPrice)
+        .ok_or(Error::PriceNotAvailable)
 }
 
 pub fn set_price(env: &Env, symbol: &Symbol, price_data: &PriceData) {
