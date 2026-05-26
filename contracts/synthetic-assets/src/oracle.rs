@@ -86,26 +86,19 @@ pub fn calculate_price_deviation(old_price: i128, new_price: i128) -> Result<u32
         return Err(Error::InvalidPrice);
     }
 
+    // compute absolute difference using checked ops
     let diff = if new_price >= old_price {
-        match new_price.checked_sub(old_price) {
-            Some(v) => v,
-            None => return Err(Error::Overflow),
-        }
+        new_price.checked_sub(old_price).ok_or(Error::Overflow)?
     } else {
-        match old_price.checked_sub(new_price) {
-            Some(v) => v,
-            None => return Err(Error::Overflow),
-        }
+        old_price.checked_sub(new_price).ok_or(Error::Overflow)?
     };
 
     // Multiply then divide with checked ops to avoid overflow
-    let scaled = match diff.checked_mul(10000) {
-        Some(v) => match v.checked_div(old_price) {
-            Some(d) => d,
-            None => return Err(Error::Overflow),
-        },
-        None => return Err(Error::Overflow),
-    };
+    let scaled = diff
+        .checked_mul(10000)
+        .ok_or(Error::Overflow)?
+        .checked_div(old_price)
+        .ok_or(Error::Overflow)?;
 
     if scaled > u32::MAX as i128 {
         Err(Error::Overflow)

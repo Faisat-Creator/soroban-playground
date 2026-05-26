@@ -485,8 +485,8 @@ impl SyntheticAssetsContract {
             created_at: env.ledger().timestamp(),
         };
 
-        set_trading_position(&env, position_id, &position);
         increment_position_counter(&env, 1)?;
+        set_trading_position(&env, position_id, &position);
 
         Ok(position_id)
     }
