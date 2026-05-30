@@ -12,6 +12,12 @@ module.exports = {
       },
     ],
   },
+  moduleNameMapper: {
+    '^../src/services/dbService\\.js$': path.resolve(__dirname, 'src/services/__mocks__/dbService.js'),
+    '^./dbService\\.js$': path.resolve(__dirname, 'src/services/__mocks__/dbService.js'),
+    '^../src/services/databaseService\\.js$': path.resolve(__dirname, 'src/services/__mocks__/databaseService.js'),
+    '^./databaseService\\.js$': path.resolve(__dirname, 'src/services/__mocks__/databaseService.js'),
+  },
   globals: {
     'babel-jest': {
       useESM: true,

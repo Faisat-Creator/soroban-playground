@@ -8,12 +8,31 @@ import { sharedOracleEventBus } from './services/oracle/oracleEvents.js';
 
 const clients = new Set();
 
-export function broadcastTreasuryEvent(event) {
-  const message = JSON.stringify({ type: 'treasury-event', ...event });
-  for (const socket of clients) {
+function safeSend(socket, message) {
+  try {
     if (socket.readyState === socket.OPEN) {
       socket.send(message);
     }
+  } catch (err) {
+    console.error('WS send error:', err.message);
+    clients.delete(socket);
+  }
+}
+
+function safeStringify(payload) {
+  try {
+    return JSON.stringify(payload);
+  } catch (err) {
+    console.error('WS serialize error:', err.message);
+    return null;
+  }
+}
+
+export function broadcastTreasuryEvent(event) {
+  const message = safeStringify({ type: 'treasury-event', ...event });
+  if (!message) return;
+  for (const socket of clients) {
+    safeSend(socket, message);
   }
 }
 
@@ -23,12 +42,21 @@ export function setupWebsocketServer(httpServer) {
     path: '/ws',
   });
 
+  wss.on('error', (err) => {
+    console.error('WebSocketServer error:', err.message);
+  });
+
   wss.on('connection', (socket, request) => {
+    let url;
+    try {
+      url = new URL(request.url, 'http://localhost');
+    } catch {
+      socket.close(1008, 'Bad Request');
+      return;
+    }
+
     const authHeader = request.headers.authorization || '';
-    const tokenFromQuery = new URL(
-      request.url,
-      'http://localhost'
-    ).searchParams.get('token');
+    const tokenFromQuery = url.searchParams.get('token');
     const token = authHeader.startsWith('Bearer ')
       ? authHeader.slice('Bearer '.length)
       : tokenFromQuery;
@@ -39,12 +67,16 @@ export function setupWebsocketServer(httpServer) {
     }
 
     clients.add(socket);
-    socket.send(
-      JSON.stringify({
-        type: 'connected',
-        timestamp: new Date().toISOString(),
-      })
+
+    safeSend(
+      socket,
+      safeStringify({ type: 'connected', timestamp: new Date().toISOString() })
     );
+
+    socket.on('error', (err) => {
+      console.error('WS client error:', err.message);
+      clients.delete(socket);
+    });
 
     socket.on('close', () => {
       clients.delete(socket);
@@ -52,11 +84,10 @@ export function setupWebsocketServer(httpServer) {
   });
 
   const forward = (type) => (event) => {
-    const message = JSON.stringify({ type, ...event });
+    const message = safeStringify({ type, ...event });
+    if (!message) return;
     for (const socket of clients) {
-      if (socket.readyState === socket.OPEN) {
-        socket.send(message);
-      }
+      safeSend(socket, message);
     }
   };
 
@@ -65,12 +96,11 @@ export function setupWebsocketServer(httpServer) {
   compileProgressBus.on('progress', forward('compile-progress'));
   oracleProofQueueService.on('progress', forward('oracle-proof-progress'));
 
-  // Forward every oracle lifecycle event under a single ws message type
-  // so the frontend can subscribe with one handler.
   sharedOracleEventBus.on('*', (payload) => {
-    const message = JSON.stringify({ type: 'oracle-event', ...payload });
+    const message = safeStringify({ type: 'oracle-event', ...payload });
+    if (!message) return;
     for (const socket of clients) {
-      if (socket.readyState === socket.OPEN) socket.send(message);
+      safeSend(socket, message);
     }
   });
 
@@ -99,17 +129,17 @@ export function setupWebsocketServer(httpServer) {
         );
       }
 
-      const message = JSON.stringify({
+      const message = safeStringify({
         type: 'rate-limit-analytics',
         timestamp: new Date().toISOString(),
         topIps,
         stats,
       });
 
+      if (!message) return;
+
       for (const socket of clients) {
-        if (socket.readyState === socket.OPEN) {
-          socket.send(message);
-        }
+        safeSend(socket, message);
       }
     } catch (err) {
       console.error('WS Analytics Broadcast Error:', err.message);
@@ -120,10 +150,9 @@ export function setupWebsocketServer(httpServer) {
 }
 
 export function broadcast(payload) {
-  const message = JSON.stringify(payload);
+  const message = safeStringify(payload);
+  if (!message) return;
   for (const socket of clients) {
-    if (socket.readyState === socket.OPEN) {
-      socket.send(message);
-    }
+    safeSend(socket, message);
   }
 }
