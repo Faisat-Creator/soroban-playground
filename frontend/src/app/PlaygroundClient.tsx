@@ -55,7 +55,7 @@ import GovernancePortal, {
 } from "@/components/GovernancePortal";
 import SupplyChainPanel, { type ProductData as SupplyChainProduct, type ProductStatus as SupplyChainStatus, type QualityResult as SupplyChainQuality } from "@/components/SupplyChainPanel";
 import LotteryDashboard from "@/components/LotteryDashboard";
-import { useFreighterWallet } from "@/hooks/useFreighterWallet";
+import { useWallet } from "@/components/providers/WalletProvider";
 import { useTransactionTracker } from "@/hooks/useTransactionTracker";
 import {
   parseTransactionInvocationPayload,
@@ -374,7 +374,8 @@ export default function Home() {
   const [isSupplyChainLoading, setIsSupplyChainLoading] = useState(false);
 
   // Wallet + transaction tracking
-  const wallet = useFreighterWallet();  const { transactions, addTx, updateTx, clearTx } = useTransactionTracker();
+  const wallet = useWallet();
+  const { transactions, addTx, updateTx, clearTx } = useTransactionTracker();
 
   // Multisig wallet state
   const [multisigSigners, setMultisigSigners] = useState<SignerData[]>([]);
@@ -2386,7 +2387,7 @@ export default function Home() {
               capturedAt={activeSnapshot?.capturedAt}
               onScrubTimeline={handleTimelineScrub}
             />
-            <WalletConnect wallet={wallet} />
+            <WalletConnect />
             <PredictionMarketPanel
               contractId={contractId}
               walletAddress={wallet.address ?? undefined}
