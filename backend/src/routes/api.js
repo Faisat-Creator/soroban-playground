@@ -61,21 +61,9 @@ router.use('/oracle', oracleRouter);
 
 // Default to v1 for backward compatibility (requests to /api/compile, etc.)
 router.use('/compile', versionTransformer('v1'), v1Compile);
-router.use(
-  '/deploy',
-  versionTransformer('v1'),
-  v1Deploy
-);
-router.use(
-  '/invoke',
-  versionTransformer('v1'),
-  v1Invoke
-);
-router.use(
-  '/identity',
-  versionTransformer('v1'),
-  v1Identity
-);
+router.use('/deploy', versionTransformer('v1'), v1Deploy);
+router.use('/invoke', versionTransformer('v1'), v1Invoke);
+router.use('/identity', versionTransformer('v1'), v1Identity);
 router.use('/events', eventsRouter);
 router.use('/patents', patentsRouter);
 router.use('/token-burn', tokenBurnRouter);
@@ -87,4 +75,8 @@ import musicLicensingRoutes from './musicLicensingRoutes.js';
 router.use('/music-licensing', musicLicensingRoutes);
 
 router.use('/warranty', warrantyRoutes);
+
+import pauseToggleRoutes from './pauseToggle.js';
+router.use('/pause-toggle', pauseToggleRoutes);
+
 export default router;

@@ -6,6 +6,31 @@ dotenv.config();
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const FALLBACK_TO_MEMORY = true;
+const ANALYTICS_TTL_SECONDS = 60 * 60 * 24 * 30;
+
+function padDatePart(value) {
+  return String(value).padStart(2, '0');
+}
+
+export function getAnalyticsHourKey(date = new Date()) {
+  return [
+    'analytics:hr',
+    `${date.getUTCFullYear()}-${padDatePart(date.getUTCMonth() + 1)}-${padDatePart(date.getUTCDate())}`,
+    padDatePart(date.getUTCHours()),
+  ].join(':');
+}
+
+function normalizeAnalyticsValue(value, fallback) {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, 300) : fallback;
+}
+
+function incrementCounter(map, key, status) {
+  const entry = map.get(key) || {};
+  entry[status] = (entry[status] || 0) + 1;
+  map.set(key, entry);
+}
 
 class RedisService {
   constructor() {
@@ -17,6 +42,11 @@ class RedisService {
       max: 5000, // Prevent memory leaks by capping the number of unique identifiers tracked
       ttl: 1000 * 60 * 60, // 1 hour TTL for fallback entries
     });
+    this.localAnalytics = {
+      hourly: new Map(),
+      endpoints: new Map(),
+      ips: new Map(),
+    };
 
     if (process.env.NODE_ENV !== 'test') {
       this.init();
@@ -30,9 +60,7 @@ class RedisService {
         connectTimeout: 5000,
         retryStrategy: (times) => {
           if (times > this.maxAttempts) {
-            console.error(
-              'Redis connection failed, switching to fallback mode'
-            );
+            console.error('Redis connection failed, switching to fallback mode');
             this.isFallbackMode = true;
             return null;
           }
@@ -169,7 +197,6 @@ class RedisService {
     const windowStart = now - windowMs;
 
     // Filter out expired timestamps and enforce a hard cap to prevent array bloat
-    // Even if the limit is high, we don't store more than what is needed to verify the current window
     const fresh = bucket.filter((ts) => ts > windowStart).slice(-limit);
 
     if (fresh.length < limit) {
@@ -187,26 +214,84 @@ class RedisService {
     };
   }
 
-  async logAnalytics(endpoint, ip, status) {
-    if (this.isFallbackMode || !this.client) return;
+  async get(key) {
+    if (this.isFallbackMode || !this.client) {
+      const val = this.localCache.get(key);
+      return val !== undefined ? val : null;
+    }
+    return await this.client.get(key);
+  }
 
-    const now = new Date();
-    const hourKey = `analytics:hr:${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}:${now.getUTCHours()}`;
-    const endpointKey = `analytics:endpoint:${endpoint}`;
-    const ipKey = `analytics:ip:${ip}`;
+  async set(key, value, ttl) {
+    if (this.isFallbackMode || !this.client) {
+      this.localCache.set(key, value);
+      return 'OK';
+    }
+    return await this.client.set(key, value, 'EX', ttl);
+  }
+
+  async delete(key) {
+    if (this.isFallbackMode || !this.client) {
+      this.localCache.delete?.(key);
+      return 1;
+    }
+    return await this.client.del(key);
+  }
+
+  /**
+   * Log analytics data for endpoint usage.
+   * @param {string} endpoint - The API endpoint being accessed.
+   * @param {string} ip - IP address of the requester.
+   * @param {string} status - Status label (e.g., 'success', 'error').
+   */
+  async logAnalytics(endpoint, ip, status) {
+    const safeEndpoint = normalizeAnalyticsValue(endpoint, 'unknown');
+    const safeIp = normalizeAnalyticsValue(ip, 'unknown');
+    const safeStatus = normalizeAnalyticsValue(status, 'unknown');
+    const hourKey = getAnalyticsHourKey();
+    const endpointKey = `analytics:endpoint:${safeEndpoint}`;
+    const ipKey = `analytics:ip:${safeIp}`;
+
+    if (this.isFallbackMode || !this.client) {
+      this.logMemoryAnalytics(hourKey, safeEndpoint, safeIp, safeStatus);
+      return { stored: 'memory', hourKey, endpointKey, ipKey };
+    }
 
     try {
       const pipeline = this.client.pipeline();
-      pipeline.hincrby(hourKey, status, 1);
-      pipeline.hincrby(endpointKey, status, 1);
-      pipeline.zincrby('analytics:top_ips', 1, ip);
-      pipeline.expire(hourKey, 60 * 60 * 24 * 30); // 30 days
+      pipeline.hincrby(hourKey, safeStatus, 1);
+      pipeline.hincrby(endpointKey, safeStatus, 1);
+      pipeline.hincrby(ipKey, safeStatus, 1);
+      pipeline.zincrby('analytics:top_ips', 1, safeIp);
+      pipeline.expire(hourKey, ANALYTICS_TTL_SECONDS);
+      pipeline.expire(endpointKey, ANALYTICS_TTL_SECONDS);
+      pipeline.expire(ipKey, ANALYTICS_TTL_SECONDS);
       await pipeline.exec();
+      return { stored: 'redis', hourKey, endpointKey, ipKey };
     } catch (err) {
       console.error('Failed to log analytics:', err.message);
+      this.isFallbackMode = FALLBACK_TO_MEMORY;
+      this.logMemoryAnalytics(hourKey, safeEndpoint, safeIp, safeStatus);
+      return { stored: 'memory', hourKey, endpointKey, ipKey };
     }
+  }
+
+  logMemoryAnalytics(hourKey, endpoint, ip, status) {
+    incrementCounter(this.localAnalytics.hourly, hourKey, status);
+    incrementCounter(this.localAnalytics.endpoints, endpoint, status);
+    incrementCounter(this.localAnalytics.ips, ip, status);
+  }
+
+  getMemoryAnalyticsSnapshot() {
+    return {
+      hourly: Object.fromEntries(this.localAnalytics.hourly),
+      endpoints: Object.fromEntries(this.localAnalytics.endpoints),
+      ips: Object.fromEntries(this.localAnalytics.ips),
+    };
   }
 }
 
+// Export both default and named instance for compatibility
 const redisService = new RedisService();
 export default redisService;
+export { redisService };
