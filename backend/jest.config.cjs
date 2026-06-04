@@ -1,8 +1,6 @@
-const path = require('path');
-
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/tests/**/*.test.js'],
+  testMatch: ['**/tests/**/*.test.js', '**/tests/syntheticAssets.*.test.js'],
   modulePaths: [path.resolve(__dirname, '../node_modules')],
   transform: {
     '^.+\\.js$': [
@@ -23,4 +21,7 @@ module.exports = {
       useESM: true,
     },
   },
+  extensionsToTreatAsEsm: ['.js'],
+  transformIgnorePatterns: [],
+  nodeOptions: ['--experimental-vm-modules']
 };
