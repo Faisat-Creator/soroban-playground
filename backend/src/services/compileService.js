@@ -125,7 +125,11 @@ async function readState() {
 
 async function writeState(state) {
   await ensureDirs();
-  await fs.writeFile(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
+  try {
+    await fs.writeFile(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
+  } catch (err) {
+    console.error('Failed to persist compile state:', err.message);
+  }
 }
 
 async function hydrateState() {
@@ -171,7 +175,9 @@ async function persistState() {
 async function removeArtifact(hash) {
   const artifact = artifacts.get(hash);
   if (!artifact) return;
-  await fs.rm(artifact.path, { force: true }).catch(() => {});
+  await fs.rm(artifact.path, { force: true }).catch((err) => {
+    console.error(`Failed to remove artifact ${hash}:`, err.message);
+  });
   artifacts.delete(hash);
   cacheIndex.delete(hash);
   await invalidateCache({ hash });
@@ -402,6 +408,8 @@ async function compileOnce({ code, dependencies = {}, requestId }) {
         cargoToml: buildCargoToml(dependencies),
         timeoutMs: config.compile.timeoutMs,
       });
+    }).catch((err) => {
+      throw new Error(`Compilation failed: ${err.message}`);
     });
 
     const durationMs = Date.now() - startTime;

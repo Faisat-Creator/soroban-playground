@@ -1,7 +1,9 @@
 import fs from 'fs';
+import fsp from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import DatabaseService from './databaseService.js';
+import { getDatabase, saveDatabase } from './dbService.js';
 
 class MigrationService {
   constructor(dbPath = null) {
@@ -38,7 +40,13 @@ class MigrationService {
       return [];
     }
 
-    const files = fs.readdirSync(this.migrationsPath);
+    let files;
+    try {
+      files = fs.readdirSync(this.migrationsPath);
+    } catch (err) {
+      throw new Error(`Failed to read migrations directory: ${err.message}`);
+    }
+
     const migrationFiles = [];
 
     files.forEach((file) => {
@@ -119,7 +127,14 @@ class MigrationService {
   }
 
   async validateMigrationChecksum(migrationFile) {
-    const content = fs.readFileSync(migrationFile.fullPath, 'utf8');
+    let content;
+    try {
+      content = fs.readFileSync(migrationFile.fullPath, 'utf8');
+    } catch (err) {
+      throw new Error(
+        `Cannot read migration file ${migrationFile.filename}: ${err.message}`
+      );
+    }
     const checksum = await this.calculateChecksum(content);
 
     const appliedMigration = await this.dbService.get(
@@ -156,7 +171,14 @@ class MigrationService {
   }
 
   async executeMigration(migrationFile, dryRun = false) {
-    const content = fs.readFileSync(migrationFile.fullPath, 'utf8');
+    let content;
+    try {
+      content = fs.readFileSync(migrationFile.fullPath, 'utf8');
+    } catch (err) {
+      throw new Error(
+        `Cannot read migration file ${migrationFile.filename}: ${err.message}`
+      );
+    }
     const checksum = await this.calculateChecksum(content);
     const warnings = await this.validateMigrationSQL(content);
 
@@ -174,10 +196,7 @@ class MigrationService {
 
     try {
       await this.dbService.transaction(async (db) => {
-        // Execute migration SQL
         await db.run(content);
-
-        // Record migration
         await db.run(
           `INSERT INTO ${this.migrationTable} (version, checksum, execution_time, status) VALUES (?, ?, ?, ?)`,
           [migrationFile.version, checksum, Date.now() - startTime, 'applied']
@@ -208,7 +227,14 @@ class MigrationService {
       );
     }
 
-    const content = fs.readFileSync(downFile.fullPath, 'utf8');
+    let content;
+    try {
+      content = fs.readFileSync(downFile.fullPath, 'utf8');
+    } catch (err) {
+      throw new Error(
+        `Cannot read rollback file ${downFile.filename}: ${err.message}`
+      );
+    }
     const warnings = await this.validateMigrationSQL(content);
 
     if (dryRun) {
@@ -225,10 +251,7 @@ class MigrationService {
 
     try {
       await this.dbService.transaction(async (db) => {
-        // Execute rollback SQL
         await db.run(content);
-
-        // Update migration record
         await db.run(
           `UPDATE ${this.migrationTable} SET status = ?, execution_time = ? WHERE version = ?`,
           ['rolled_back', Date.now() - startTime, migrationFile.version]
@@ -345,3 +368,190 @@ class MigrationService {
 }
 
 export default MigrationService;
+
+// ── Functional API (sql.js backed) ──────────────────────────────────────────
+
+const MIGRATION_TABLE = '_schema_migrations';
+
+function getMigrationsDir() {
+  return process.env.MIGRATIONS_DIR || path.join(process.cwd(), 'migrations');
+}
+
+function sha256(content) {
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
+
+async function ensureMigrationTable(db) {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS ${MIGRATION_TABLE} (
+      version INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      checksum TEXT NOT NULL,
+      applied_at TEXT DEFAULT (datetime('now')),
+      status TEXT DEFAULT 'applied'
+    )
+  `);
+  await saveDatabase();
+}
+
+async function readMigrationFiles() {
+  const dir = getMigrationsDir();
+  let entries;
+  try {
+    entries = await fsp.readdir(dir);
+  } catch {
+    return [];
+  }
+  const files = [];
+  for (const entry of entries) {
+    const m = entry.match(/^V(\d+)__(.+)\.(up|down)\.sql$/);
+    if (m) {
+      files.push({
+        version: parseInt(m[1], 10),
+        name: m[2],
+        direction: m[3],
+        filename: entry,
+        fullPath: path.join(dir, entry),
+      });
+    }
+  }
+  return files;
+}
+
+export async function validateMigrations() {
+  const files = await readMigrationFiles();
+  const ups = files.filter((f) => f.direction === 'up');
+  const downs = new Set(
+    files.filter((f) => f.direction === 'down').map((f) => f.version)
+  );
+  const errors = [];
+  for (const u of ups) {
+    if (!downs.has(u.version))
+      errors.push(`Missing down migration for version ${u.version}`);
+  }
+  return errors;
+}
+
+export async function initializeMigrationService() {
+  const db = await getDatabase();
+  await ensureMigrationTable(db);
+}
+
+export async function getAppliedMigrations() {
+  const db = await getDatabase();
+  const result = db.exec(
+    `SELECT version, name, checksum, applied_at, status FROM ${MIGRATION_TABLE} ORDER BY version`
+  );
+  if (!result.length) return [];
+  const [{ columns, values }] = result;
+  return values.map((row) =>
+    Object.fromEntries(columns.map((c, i) => [c, row[i]]))
+  );
+}
+
+export async function applyMigration(version, { dryRun = false } = {}) {
+  const files = await readMigrationFiles();
+  const file = files.find((f) => f.version === version && f.direction === 'up');
+  if (!file) throw new Error(`Migration file not found for version ${version}`);
+
+  let sql;
+  try {
+    sql = await fsp.readFile(file.fullPath, 'utf8');
+  } catch (err) {
+    throw new Error(
+      `Cannot read migration file ${file.filename}: ${err.message}`
+    );
+  }
+
+  const checksum = sha256(sql);
+  const db = await getDatabase();
+
+  const existing = db.exec(
+    `SELECT checksum FROM ${MIGRATION_TABLE} WHERE version = ${version}`
+  );
+  if (existing.length && existing[0].values.length) {
+    const storedChecksum = existing[0].values[0][0];
+    if (storedChecksum !== checksum) {
+      throw new Error(
+        `Checksum mismatch for migration ${version}: file has been modified`
+      );
+    }
+    return { status: 'already_applied', version };
+  }
+
+  if (dryRun) return { status: 'dry_run_success', version, sql };
+
+  db.run(sql);
+  db.run(
+    `INSERT INTO ${MIGRATION_TABLE} (version, name, checksum, status) VALUES (?, ?, ?, 'applied')`,
+    [version, file.name, checksum]
+  );
+  await saveDatabase();
+  return { status: 'applied', version };
+}
+
+export async function applyPendingMigrations({ dryRun = false } = {}) {
+  const files = await readMigrationFiles();
+  const ups = files
+    .filter((f) => f.direction === 'up')
+    .sort((a, b) => a.version - b.version);
+  const applied = await getAppliedMigrations();
+  const appliedVersions = new Set(applied.map((m) => m.version));
+  const results = [];
+  for (const f of ups) {
+    if (appliedVersions.has(f.version)) continue;
+    try {
+      const result = await applyMigration(f.version, { dryRun });
+      results.push(result);
+    } catch (err) {
+      results.push({
+        status: 'failed',
+        version: f.version,
+        error: err.message,
+      });
+      break;
+    }
+  }
+  return results;
+}
+
+export async function rollbackMigration(version, { dryRun = false } = {}) {
+  const files = await readMigrationFiles();
+  const file = files.find(
+    (f) => f.version === version && f.direction === 'down'
+  );
+  if (!file) throw new Error(`Down migration not found for version ${version}`);
+
+  let sql;
+  try {
+    sql = await fsp.readFile(file.fullPath, 'utf8');
+  } catch (err) {
+    throw new Error(
+      `Cannot read rollback file ${file.filename}: ${err.message}`
+    );
+  }
+
+  if (dryRun) return { status: 'dry_run_success', version, sql };
+
+  const db = await getDatabase();
+  db.run(sql);
+  db.run(
+    `UPDATE ${MIGRATION_TABLE} SET status = 'rolled_back' WHERE version = ?`,
+    [version]
+  );
+  await saveDatabase();
+  return { status: 'rolled_back', version };
+}
+
+export async function getMigrationDashboard() {
+  const files = await readMigrationFiles();
+  const ups = files.filter((f) => f.direction === 'up');
+  const applied = await getAppliedMigrations();
+  const appliedVersions = new Set(applied.map((m) => m.version));
+  return {
+    total: ups.length,
+    applied: applied.length,
+    pending: ups.filter((f) => !appliedVersions.has(f.version)).length,
+    migrations: applied,
+  };
+}
