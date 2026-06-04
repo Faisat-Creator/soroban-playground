@@ -1,8 +1,8 @@
 [package]
-name = "soroban-yield-optimizer"
+name = "soroban-reit"
 version = "0.1.0"
 edition = "2021"
-description = "Cross-protocol yield optimizer with auto-compounding and strategy backtesting"
+description = "Tokenized Real Estate Investment Trust with dividend distribution and share management"
 
 [lib]
 crate-type = ["cdylib"]

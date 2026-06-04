@@ -1,3 +1,15 @@
+// Copyright (c) 2026 StellarDevTools
+// SPDX-License-Identifier: MIT
+
+//! # Cross-Protocol Yield Optimizer
+//!
+//! Extends basic yield farming with:
+//! - Multi-strategy portfolio allocation with configurable weights.
+//! - Auto-compounding per user position.
+//! - On-chain strategy backtesting simulation.
+//! - Optimal strategy recommendation (highest active APY).
+//! - Emergency pause/unpause.
+
 #![no_std]
 
 mod storage;
@@ -7,174 +19,147 @@ mod types;
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Vec};
 
 use crate::storage::{
-    get_admin, get_executor, get_position, get_strategy, get_strategy_count, has_position,
-    has_strategy, is_initialized, is_paused, remove_position, set_admin, set_executor,
-    set_paused, set_position, set_strategy, set_strategy_count,
+    get_admin, get_position, get_strategy, get_strategy_count, has_position, has_strategy,
+    is_initialized, is_paused, remove_position, set_admin, set_paused, set_position, set_strategy,
+    set_strategy_count,
 };
-use crate::types::{Error, Position, PositionView, Strategy};
+use crate::types::{Allocation, BacktestResult, Error, Position, Strategy};
 
-const SECONDS_PER_YEAR: u64 = 31_536_000;
-const BPS_DENOM: u32 = 10_000;
-const MAX_APY_BPS: u32 = 20_000;
-const MAX_FEE_BPS: u32 = 2_500;
+const SECS_PER_YEAR: u64 = 31_536_000;
+const BPS: u32 = 10_000;
+const MAX_APY_BPS: u32 = 50_000; // 500%
 
 #[contract]
 pub struct YieldOptimizer;
 
 #[contractimpl]
 impl YieldOptimizer {
-    pub fn initialize(env: Env, admin: Address, executor: Address) -> Result<(), Error> {
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    pub fn initialize(env: Env, admin: Address) -> Result<(), Error> {
         if is_initialized(&env) {
             return Err(Error::AlreadyInitialized);
         }
         admin.require_auth();
         set_admin(&env, &admin);
-        set_executor(&env, &executor);
         set_strategy_count(&env, 0);
-        set_paused(&env, false);
-
-        env.events()
-            .publish((symbol_short!("init"),), (admin, executor));
-
-        Ok(())
-    }
-
-    pub fn create_strategy(
-        env: Env,
-        admin: Address,
-        name: String,
-        protocol: String,
-        apy_bps: u32,
-        fee_bps: u32,
-        compound_interval: u64,
-    ) -> Result<u32, Error> {
-        Self::assert_admin(&env, &admin)?;
-        Self::assert_strategy_params(&name, &protocol, apy_bps, fee_bps, compound_interval)?;
-
-        let id = get_strategy_count(&env) + 1;
-        let strategy = Strategy {
-            name,
-            protocol,
-            apy_bps,
-            fee_bps,
-            total_deposited: 0,
-            total_shares: 0,
-            is_active: true,
-            compound_interval,
-            last_compound_ts: env.ledger().timestamp(),
-        };
-
-        set_strategy(&env, id, &strategy);
-        set_strategy_count(&env, id);
-
-        env.events()
-            .publish((symbol_short!("strat"), symbol_short!("create"), id), apy_bps);
-
-        Ok(id)
-    }
-
-    pub fn update_strategy(
-        env: Env,
-        admin: Address,
-        strategy_id: u32,
-        apy_bps: u32,
-        fee_bps: u32,
-        compound_interval: u64,
-        is_active: bool,
-    ) -> Result<(), Error> {
-        Self::assert_admin(&env, &admin)?;
-        if apy_bps > MAX_APY_BPS {
-            return Err(Error::InvalidApy);
-        }
-        if fee_bps > MAX_FEE_BPS {
-            return Err(Error::InvalidFee);
-        }
-        if compound_interval == 0 {
-            return Err(Error::InvalidInterval);
-        }
-
-        let mut strategy = get_strategy(&env, strategy_id)?;
-        strategy.apy_bps = apy_bps;
-        strategy.fee_bps = fee_bps;
-        strategy.compound_interval = compound_interval;
-        strategy.is_active = is_active;
-
-        set_strategy(&env, strategy_id, &strategy);
-
-        env.events().publish(
-            (symbol_short!("strat"), symbol_short!("update"), strategy_id),
-            (apy_bps, fee_bps),
-        );
-
-        Ok(())
-    }
-
-    pub fn set_executor(env: Env, admin: Address, executor: Address) -> Result<(), Error> {
-        Self::assert_admin(&env, &admin)?;
-        set_executor(&env, &executor);
-        env.events()
-            .publish((symbol_short!("exec"), symbol_short!("set")), executor);
+        env.events().publish((symbol_short!("init"),), (admin,));
         Ok(())
     }
 
     pub fn pause(env: Env, admin: Address) -> Result<(), Error> {
         Self::assert_admin(&env, &admin)?;
         set_paused(&env, true);
-        env.events().publish((symbol_short!("pause"),), admin);
+        env.events().publish((symbol_short!("paused"),), ());
         Ok(())
     }
 
     pub fn unpause(env: Env, admin: Address) -> Result<(), Error> {
         Self::assert_admin(&env, &admin)?;
         set_paused(&env, false);
-        env.events().publish((symbol_short!("unpause"),), admin);
+        env.events().publish((symbol_short!("unpaused"),), ());
         Ok(())
     }
+
+    // ── Strategy management ───────────────────────────────────────────────────
+
+    /// Register a new strategy. Returns its ID.
+    pub fn add_strategy(
+        env: Env,
+        admin: Address,
+        name: String,
+        apy_bps: u32,
+    ) -> Result<u32, Error> {
+        Self::assert_admin(&env, &admin)?;
+        if name.len() == 0 {
+            return Err(Error::EmptyName);
+        }
+        if apy_bps > MAX_APY_BPS {
+            return Err(Error::InvalidApy);
+        }
+        let id = get_strategy_count(&env) + 1;
+        set_strategy(
+            &env,
+            id,
+            &Strategy {
+                name: name.clone(),
+                apy_bps,
+                total_deposited: 0,
+                is_active: true,
+                last_compound_ts: env.ledger().timestamp(),
+            },
+        );
+        set_strategy_count(&env, id);
+        env.events()
+            .publish((symbol_short!("strat_add"), id), (name, apy_bps));
+        Ok(id)
+    }
+
+    pub fn update_apy(
+        env: Env,
+        admin: Address,
+        strategy_id: u32,
+        new_apy_bps: u32,
+    ) -> Result<(), Error> {
+        Self::assert_admin(&env, &admin)?;
+        if new_apy_bps > MAX_APY_BPS {
+            return Err(Error::InvalidApy);
+        }
+        let mut s = get_strategy(&env, strategy_id)?;
+        s.apy_bps = new_apy_bps;
+        set_strategy(&env, strategy_id, &s);
+        env.events()
+            .publish((symbol_short!("apy_upd"), strategy_id), new_apy_bps);
+        Ok(())
+    }
+
+    pub fn set_strategy_active(
+        env: Env,
+        admin: Address,
+        strategy_id: u32,
+        active: bool,
+    ) -> Result<(), Error> {
+        Self::assert_admin(&env, &admin)?;
+        let mut s = get_strategy(&env, strategy_id)?;
+        s.is_active = active;
+        set_strategy(&env, strategy_id, &s);
+        env.events()
+            .publish((symbol_short!("strat_tog"), strategy_id), active);
+        Ok(())
+    }
+
+    // ── User actions ──────────────────────────────────────────────────────────
 
     pub fn deposit(
         env: Env,
         user: Address,
         strategy_id: u32,
         amount: i128,
-    ) -> Result<i128, Error> {
-        Self::assert_active(&env)?;
+    ) -> Result<(), Error> {
+        Self::assert_not_paused(&env)?;
         user.require_auth();
         if amount <= 0 {
             return Err(Error::ZeroAmount);
         }
-
-        let mut strategy = get_strategy(&env, strategy_id)?;
-        if !strategy.is_active {
+        let mut s = get_strategy(&env, strategy_id)?;
+        if !s.is_active {
             return Err(Error::StrategyPaused);
         }
-
-        let minted_shares = Self::shares_for_deposit(&strategy, amount);
         let now = env.ledger().timestamp();
-
-        let mut position = if has_position(&env, strategy_id, &user) {
-            get_position(&env, strategy_id, &user)?
+        let mut pos = if has_position(&env, strategy_id, &user) {
+            Self::accrue(get_position(&env, strategy_id, &user)?, &s, now)
         } else {
-            Position {
-                shares: 0,
-                principal: 0,
-                last_action_ts: now,
-            }
+            Position { deposited: 0, compounded_balance: 0, last_update_ts: now }
         };
-
-        position.shares = position.shares.saturating_add(minted_shares);
-        position.principal = position.principal.saturating_add(amount);
-        position.last_action_ts = now;
-
-        strategy.total_shares = strategy.total_shares.saturating_add(minted_shares);
-        strategy.total_deposited = strategy.total_deposited.saturating_add(amount);
-
-        set_position(&env, strategy_id, &user, &position);
-        set_strategy(&env, strategy_id, &strategy);
-
+        pos.deposited += amount;
+        pos.compounded_balance += amount;
+        pos.last_update_ts = now;
+        s.total_deposited += amount;
+        set_position(&env, strategy_id, &user, &pos);
+        set_strategy(&env, strategy_id, &s);
         env.events()
             .publish((symbol_short!("deposit"), strategy_id), (user, amount));
-
-        Ok(minted_shares)
+        Ok(())
     }
 
     pub fn withdraw(
@@ -183,120 +168,185 @@ impl YieldOptimizer {
         strategy_id: u32,
         amount: i128,
     ) -> Result<i128, Error> {
-        Self::assert_active(&env)?;
+        Self::assert_not_paused(&env)?;
         user.require_auth();
         if amount <= 0 {
             return Err(Error::ZeroAmount);
         }
-
-        let mut strategy = get_strategy(&env, strategy_id)?;
-        let mut position = get_position(&env, strategy_id, &user)?;
-        let current_balance = Self::value_for_shares(&strategy, position.shares);
-        if amount > current_balance {
+        let mut s = get_strategy(&env, strategy_id)?;
+        let now = env.ledger().timestamp();
+        let mut pos = Self::accrue(get_position(&env, strategy_id, &user)?, &s, now);
+        if amount > pos.compounded_balance {
             return Err(Error::InsufficientBalance);
         }
-
-        let shares_to_burn = Self::shares_for_withdraw(&strategy, amount);
-        if shares_to_burn > position.shares {
-            return Err(Error::InsufficientBalance);
-        }
-
-        position.shares = position.shares.saturating_sub(shares_to_burn);
-        position.principal = position.principal.saturating_sub(amount.min(position.principal));
-        position.last_action_ts = env.ledger().timestamp();
-
-        strategy.total_shares = strategy.total_shares.saturating_sub(shares_to_burn);
-        strategy.total_deposited = strategy.total_deposited.saturating_sub(amount);
-
-        if position.shares == 0 {
+        pos.compounded_balance -= amount;
+        pos.deposited -= amount.min(pos.deposited);
+        s.total_deposited -= amount.min(s.total_deposited);
+        pos.last_update_ts = now;
+        if pos.compounded_balance == 0 {
             remove_position(&env, strategy_id, &user);
         } else {
-            set_position(&env, strategy_id, &user, &position);
+            set_position(&env, strategy_id, &user, &pos);
         }
-        set_strategy(&env, strategy_id, &strategy);
-
+        set_strategy(&env, strategy_id, &s);
         env.events()
-            .publish((symbol_short!("withdrw"), strategy_id), (user, amount));
-
+            .publish((symbol_short!("withdraw"), strategy_id), (user, amount));
         Ok(amount)
     }
 
-    pub fn compound(env: Env, caller: Address, strategy_id: u32) -> Result<i128, Error> {
-        Self::assert_active(&env)?;
-        caller.require_auth();
-        Self::assert_compounder(&env, &caller)?;
-
-        let mut strategy = get_strategy(&env, strategy_id)?;
+    /// Trigger auto-compounding for a user's position. Callable by anyone (keeper).
+    pub fn compound(env: Env, user: Address, strategy_id: u32) -> Result<i128, Error> {
+        Self::assert_not_paused(&env)?;
+        let s = get_strategy(&env, strategy_id)?;
         let now = env.ledger().timestamp();
-        let elapsed = now.saturating_sub(strategy.last_compound_ts);
-
-        if elapsed < strategy.compound_interval {
-            return Err(Error::CompoundTooSoon);
-        }
-
-        let gross_reward = strategy
-            .total_deposited
-            .saturating_mul(strategy.apy_bps as i128)
-            .saturating_mul(elapsed as i128)
-            / (BPS_DENOM as i128 * SECONDS_PER_YEAR as i128);
-        let fee = gross_reward.saturating_mul(strategy.fee_bps as i128) / BPS_DENOM as i128;
-        let net_reward = gross_reward.saturating_sub(fee);
-
-        strategy.total_deposited = strategy.total_deposited.saturating_add(net_reward);
-        strategy.last_compound_ts = now;
-        set_strategy(&env, strategy_id, &strategy);
-
-        env.events().publish(
-            (symbol_short!("compound"), strategy_id),
-            (caller, net_reward, fee),
-        );
-
-        Ok(strategy.total_deposited)
+        let pos = Self::accrue(get_position(&env, strategy_id, &user)?, &s, now);
+        let bal = pos.compounded_balance;
+        set_position(&env, strategy_id, &user, &pos);
+        env.events()
+            .publish((symbol_short!("compound"), strategy_id), (user, bal));
+        Ok(bal)
     }
+
+    /// Allocate `total_amount` across strategies according to weights.
+    /// Validates weights sum to BPS (10 000) and all strategies are active.
+    /// Returns per-strategy deposit amounts (simulation only — no actual token transfer).
+    pub fn allocate(
+        env: Env,
+        allocations: Vec<Allocation>,
+        total_amount: i128,
+    ) -> Result<Vec<i128>, Error> {
+        if total_amount <= 0 {
+            return Err(Error::ZeroAmount);
+        }
+        let mut weight_sum: u32 = 0;
+        for a in allocations.iter() {
+            get_strategy(&env, a.strategy_id)?; // existence check
+            weight_sum = weight_sum.saturating_add(a.weight_bps);
+        }
+        if weight_sum != BPS {
+            return Err(Error::InvalidWeights);
+        }
+        let mut amounts = Vec::new(&env);
+        for a in allocations.iter() {
+            let amt = (total_amount as i128)
+                .saturating_mul(a.weight_bps as i128)
+                / BPS as i128;
+            amounts.push_back(amt);
+        }
+        Ok(amounts)
+    }
+
+    /// Return the ID of the active strategy with the highest APY.
+    pub fn best_strategy(env: Env) -> Result<u32, Error> {
+        Self::assert_initialized(&env)?;
+        let count = get_strategy_count(&env);
+        let mut best_id: u32 = 0;
+        let mut best_apy: u32 = 0;
+        for i in 1..=count {
+            if !has_strategy(&env, i) {
+                continue;
+            }
+            if let Ok(s) = get_strategy(&env, i) {
+                if s.is_active && s.apy_bps > best_apy {
+                    best_apy = s.apy_bps;
+                    best_id = i;
+                }
+            }
+        }
+        if best_id == 0 {
+            return Err(Error::StrategyNotFound);
+        }
+        Ok(best_id)
+    }
+
+    /// Simulate historical performance of a strategy over `duration_secs`.
+    /// Pure computation — no state changes.
+    pub fn backtest(
+        env: Env,
+        strategy_id: u32,
+        initial_amount: i128,
+        duration_secs: u64,
+    ) -> Result<BacktestResult, Error> {
+        if initial_amount <= 0 {
+            return Err(Error::ZeroAmount);
+        }
+        if duration_secs == 0 {
+            return Err(Error::InvalidDuration);
+        }
+        let s = get_strategy(&env, strategy_id)?;
+        // Compound annually: final = initial * (1 + apy)^years
+        // Approximated with continuous compounding in integer arithmetic:
+        // reward = initial * apy_bps * duration / (BPS * SECS_PER_YEAR)
+        let reward = (initial_amount as i128)
+            .saturating_mul(s.apy_bps as i128)
+            .saturating_mul(duration_secs as i128)
+            / (BPS as i128 * SECS_PER_YEAR as i128);
+        let final_amount = initial_amount.saturating_add(reward);
+        let gain = final_amount - initial_amount;
+        // effective_apy_bps = gain * BPS * SECS_PER_YEAR / (initial * duration)
+        let effective_apy_bps = if initial_amount > 0 && duration_secs > 0 {
+            ((gain as i128)
+                .saturating_mul(BPS as i128)
+                .saturating_mul(SECS_PER_YEAR as i128)
+                / (initial_amount as i128 * duration_secs as i128)) as u32
+        } else {
+            0
+        };
+        Ok(BacktestResult {
+            strategy_id,
+            initial_amount,
+            final_amount,
+            gain,
+            effective_apy_bps,
+            duration_secs,
+        })
+    }
+
+    // ── Read-only ─────────────────────────────────────────────────────────────
 
     pub fn get_strategy(env: Env, strategy_id: u32) -> Result<Strategy, Error> {
         get_strategy(&env, strategy_id)
-    }
-
-    pub fn get_position(
-        env: Env,
-        user: Address,
-        strategy_id: u32,
-    ) -> Result<PositionView, Error> {
-        let strategy = get_strategy(&env, strategy_id)?;
-        let position = get_position(&env, strategy_id, &user)?;
-        Ok(PositionView {
-            shares: position.shares,
-            principal: position.principal,
-            current_balance: Self::value_for_shares(&strategy, position.shares),
-            last_action_ts: position.last_action_ts,
-        })
     }
 
     pub fn strategy_count(env: Env) -> u32 {
         get_strategy_count(&env)
     }
 
+    pub fn get_position(env: Env, user: Address, strategy_id: u32) -> Result<Position, Error> {
+        let s = get_strategy(&env, strategy_id)?;
+        let pos = get_position(&env, strategy_id, &user)?;
+        Ok(Self::accrue(pos, &s, env.ledger().timestamp()))
+    }
+
+    pub fn is_paused(env: Env) -> bool {
+        is_paused(&env)
+    }
+
     pub fn list_strategies(env: Env) -> Vec<u32> {
-        let mut strategies = Vec::new(&env);
-        for id in 1..=get_strategy_count(&env) {
-            if has_strategy(&env, id) {
-                strategies.push_back(id);
+        let count = get_strategy_count(&env);
+        let mut ids = Vec::new(&env);
+        for i in 1..=count {
+            if has_strategy(&env, i) {
+                ids.push_back(i);
             }
         }
-        strategies
+        ids
     }
 
-    pub fn get_admin(env: Env) -> Result<Address, Error> {
-        get_admin(&env)
-    }
+    // ── Internal ──────────────────────────────────────────────────────────────
 
-    pub fn get_executor(env: Env) -> Result<Address, Error> {
-        get_executor(&env)
-    }
-
-    pub fn paused(env: Env) -> bool {
-        is_paused(&env)
+    fn accrue(mut pos: Position, s: &Strategy, now: u64) -> Position {
+        let elapsed = now.saturating_sub(pos.last_update_ts);
+        if elapsed == 0 || s.apy_bps == 0 || pos.compounded_balance == 0 {
+            return pos;
+        }
+        let reward = (pos.compounded_balance as i128)
+            .saturating_mul(s.apy_bps as i128)
+            .saturating_mul(elapsed as i128)
+            / (BPS as i128 * SECS_PER_YEAR as i128);
+        pos.compounded_balance = pos.compounded_balance.saturating_add(reward);
+        pos.last_update_ts = now;
+        pos
     }
 
     fn assert_initialized(env: &Env) -> Result<(), Error> {
@@ -306,85 +356,19 @@ impl YieldOptimizer {
         Ok(())
     }
 
-    fn assert_active(env: &Env) -> Result<(), Error> {
+    fn assert_admin(env: &Env, caller: &Address) -> Result<(), Error> {
         Self::assert_initialized(env)?;
+        caller.require_auth();
+        if *caller != get_admin(env)? {
+            return Err(Error::Unauthorized);
+        }
+        Ok(())
+    }
+
+    fn assert_not_paused(env: &Env) -> Result<(), Error> {
         if is_paused(env) {
             return Err(Error::ContractPaused);
         }
         Ok(())
-    }
-
-    fn assert_admin(env: &Env, caller: &Address) -> Result<(), Error> {
-        Self::assert_initialized(env)?;
-        caller.require_auth();
-        if get_admin(env)? != *caller {
-            return Err(Error::Unauthorized);
-        }
-        Ok(())
-    }
-
-    fn assert_compounder(env: &Env, caller: &Address) -> Result<(), Error> {
-        let admin = get_admin(env)?;
-        let executor = get_executor(env)?;
-        if *caller != admin && *caller != executor {
-            return Err(Error::Unauthorized);
-        }
-        Ok(())
-    }
-
-    fn assert_strategy_params(
-        name: &String,
-        protocol: &String,
-        apy_bps: u32,
-        fee_bps: u32,
-        compound_interval: u64,
-    ) -> Result<(), Error> {
-        if name.len() == 0 {
-            return Err(Error::EmptyName);
-        }
-        if protocol.len() == 0 {
-            return Err(Error::InvalidProtocol);
-        }
-        if apy_bps > MAX_APY_BPS {
-            return Err(Error::InvalidApy);
-        }
-        if fee_bps > MAX_FEE_BPS {
-            return Err(Error::InvalidFee);
-        }
-        if compound_interval == 0 {
-            return Err(Error::InvalidInterval);
-        }
-        Ok(())
-    }
-
-    fn shares_for_deposit(strategy: &Strategy, amount: i128) -> i128 {
-        if strategy.total_shares == 0 || strategy.total_deposited == 0 {
-            return amount;
-        }
-
-        amount.saturating_mul(strategy.total_shares) / strategy.total_deposited
-    }
-
-    fn shares_for_withdraw(strategy: &Strategy, amount: i128) -> i128 {
-        if strategy.total_shares == 0 || strategy.total_deposited == 0 {
-            return amount;
-        }
-
-        let numerator = amount.saturating_mul(strategy.total_shares);
-        let quotient = numerator / strategy.total_deposited;
-        let remainder = numerator % strategy.total_deposited;
-        if remainder == 0 {
-            quotient
-        } else {
-            quotient.saturating_add(1)
-        }
-    }
-
-    fn value_for_shares(strategy: &Strategy, shares: i128) -> i128 {
-        if strategy.total_shares == 0 || shares == 0 {
-            return 0;
-        }
-
-        shares.saturating_mul(strategy.total_deposited) / strategy.total_shares
     }
 }

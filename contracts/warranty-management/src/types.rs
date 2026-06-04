@@ -13,57 +13,57 @@ pub enum Error {
     ProductNotFound = 4,
     WarrantyNotFound = 5,
     ClaimNotFound = 6,
-    EmptyField = 7,
-    WarrantyExpired = 8,
-    WarrantyInactive = 9,
-    ClaimAlreadyProcessed = 10,
-    ContractPaused = 11,
-    InvalidDuration = 12,
-}
-
-/// A registered product eligible for warranty coverage.
-#[contracttype]
-#[derive(Clone, Debug, PartialEq)]
-pub struct Product {
-    pub name: String,
-    /// Manufacturer / brand address.
-    pub manufacturer: Address,
-    /// Default warranty duration in seconds.
-    pub default_warranty_secs: u64,
-    pub is_active: bool,
-}
-
-/// A warranty issued to an owner for a specific product.
-#[contracttype]
-#[derive(Clone, Debug, PartialEq)]
-pub struct Warranty {
-    pub product_id: u32,
-    pub owner: Address,
-    /// Ledger timestamp when warranty was issued.
-    pub issued_at: u64,
-    /// Ledger timestamp when warranty expires.
-    pub expires_at: u64,
-    pub is_active: bool,
+    EmptyName = 7,
+    InvalidDuration = 8,
+    WarrantyExpired = 9,
+    WarrantyInactive = 10,
+    ClaimAlreadyProcessed = 11,
+    NotWarrantyOwner = 12,
+    ContractPaused = 13,
+    ProductInactive = 14,
 }
 
 #[contracttype]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
-#[repr(u32)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ClaimStatus {
     Pending = 0,
     Approved = 1,
     Rejected = 2,
 }
 
-/// A warranty claim filed by an owner.
+/// A product registered by the manufacturer.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct Product {
+    pub manufacturer: Address,
+    pub name: String,
+    /// Warranty duration in seconds.
+    pub warranty_duration_secs: u64,
+    pub is_active: bool,
+}
+
+/// A warranty issued to a buyer for a specific product.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct Warranty {
+    pub product_id: u32,
+    pub owner: Address,
+    pub purchase_ts: u64,
+    pub expiry_ts: u64,
+    pub is_active: bool,
+    pub serial_number: String,
+}
+
+/// A warranty claim filed by the owner.
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Claim {
     pub warranty_id: u32,
     pub claimant: Address,
     pub description: String,
-    pub filed_at: u64,
     pub status: ClaimStatus,
+    pub filed_ts: u64,
+    pub resolved_ts: u64,
 }
 
 #[contracttype]
