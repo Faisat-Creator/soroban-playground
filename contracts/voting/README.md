@@ -109,9 +109,7 @@ The contract returns explicit errors for common invalid states:
 | `EmptyOptions` | The poll was initialized with no options |
 | `DuplicateOption` | The options list contains duplicates |
 | `UnknownOption` | A vote targeted an option that was not registered |
-| `VoteCountUnderflow` | An existing option count could not be safely decremented |
-| `VoteCountOverflow` | A registered option count reached the maximum `u32` value |
-| `VoterCountOverflow` | The unique voter counter reached the maximum `u32` value |
+| `InvalidState` | The stored vote counts were inconsistent during an update |
 
 ## Project structure
 

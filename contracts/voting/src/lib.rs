@@ -51,10 +51,8 @@ impl VotingContract {
             }
 
             let current_count = get_count(&env, &current_option);
-            let next_count = current_count
-                .checked_sub(1)
-                .ok_or(Error::VoteCountUnderflow)?;
-            Some((current_option, next_count))
+            let updated_count = current_count.checked_sub(1).ok_or(Error::InvalidState)?;
+            set_count(&env, &current_option, updated_count);
         } else {
             None
         };
