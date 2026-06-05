@@ -22,7 +22,9 @@ jest.unstable_mockModule('../src/database/connection.js', () => ({
   },
   getDatabase: () => {
     if (!testDb) {
-      throw new Error('Database not initialized. Call initializeDatabase() first.');
+      throw new Error(
+        'Database not initialized. Call initializeDatabase() first.'
+      );
     }
     return testDb;
   },
@@ -34,7 +36,8 @@ jest.unstable_mockModule('../src/database/connection.js', () => ({
   },
 }));
 
-const { initializeDatabase, closeDatabase } = await import('../src/database/connection.js');
+const { initializeDatabase, closeDatabase } =
+  await import('../src/database/connection.js');
 
 import express from 'express';
 import request from 'supertest';
@@ -123,7 +126,10 @@ describe('Favorites API', () => {
       expect(res.body.favorites).toEqual(['a', 'b', 'c']);
       expect(res.body).toHaveProperty('updatedAt');
 
-      const row = await testDb.get('SELECT * FROM favorites WHERE wallet_address = ?', WALLET);
+      const row = await testDb.get(
+        'SELECT * FROM favorites WHERE wallet_address = ?',
+        WALLET
+      );
       expect(row).toBeTruthy();
       expect(JSON.parse(row.favorites)).toEqual(['a', 'b', 'c']);
     });

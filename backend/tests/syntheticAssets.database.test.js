@@ -29,11 +29,12 @@ beforeAll(async () => {
   // Initialize database service with in-memory database
   databaseService = new DatabaseService(TEST_DB_PATH);
   await databaseService.connect();
-  
+
   // Run migrations to set up schema
   try {
     // Import and run the synthetic assets migration
-    const migrationSQL = await import('../../migrations/V003__synthetic_assets.up.sql');
+    const migrationSQL =
+      await import('../../migrations/V003__synthetic_assets.up.sql');
     // In practice, we'd execute the migration SQL here
     // For now, we'll create the tables manually
     await databaseService.run(`
@@ -67,7 +68,10 @@ beforeAll(async () => {
       );
     `);
   } catch (error) {
-    console.warn('Could not import migration, creating tables manually:', error);
+    console.warn(
+      'Could not import migration, creating tables manually:',
+      error
+    );
     // Fallback to manual table creation
   }
 });
@@ -123,7 +127,7 @@ describe('Synthetic Assets Database Integration Tests', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(result.positionId).toBe(POSITION_ID);
-      
+
       // Verify position was saved to database
       const positions = await databaseService.all(
         'SELECT * FROM positions WHERE position_id = $1',
@@ -141,7 +145,15 @@ describe('Synthetic Assets Database Integration Tests', () => {
       // First create a position
       await databaseService.run(
         'INSERT INTO positions (position_id, user_address, asset_symbol, collateral_amount, minted_amount, type, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [POSITION_ID, USER_ADDRESS, ASSET_SYMBOL, '1000000', '1000000', 'COLLATERAL', 'OPEN']
+        [
+          POSITION_ID,
+          USER_ADDRESS,
+          ASSET_SYMBOL,
+          '1000000',
+          '1000000',
+          'COLLATERAL',
+          'OPEN',
+        ]
       );
 
       // Mock contract call
@@ -159,7 +171,7 @@ describe('Synthetic Assets Database Integration Tests', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      
+
       // Verify position status was updated
       const positions = await databaseService.all(
         'SELECT * FROM positions WHERE position_id = $1',
@@ -173,7 +185,15 @@ describe('Synthetic Assets Database Integration Tests', () => {
       // First create a position
       await databaseService.run(
         'INSERT INTO positions (position_id, user_address, asset_symbol, collateral_amount, minted_amount, type, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [POSITION_ID, USER_ADDRESS, ASSET_SYMBOL, '1000000', '1000000', 'COLLATERAL', 'OPEN']
+        [
+          POSITION_ID,
+          USER_ADDRESS,
+          ASSET_SYMBOL,
+          '1000000',
+          '1000000',
+          'COLLATERAL',
+          'OPEN',
+        ]
       );
 
       // Mock contract call to return true for liquidatable
@@ -210,7 +230,7 @@ describe('Synthetic Assets Database Integration Tests', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      
+
       // Verify event was logged
       const events = await databaseService.all(
         'SELECT * FROM synthetic_asset_events WHERE event_type = $1 AND subject = $2',
@@ -227,7 +247,9 @@ describe('Synthetic Assets Database Integration Tests', () => {
     it('should handle database connection errors gracefully', async () => {
       // Mock database service to throw error
       const originalRun = databaseService.run.bind(databaseService);
-      databaseService.run = jest.fn().mockRejectedValue(new Error('Database connection failed'));
+      databaseService.run = jest
+        .fn()
+        .mockRejectedValue(new Error('Database connection failed'));
 
       // Act & Assert
       await expect(

@@ -34,7 +34,7 @@ async function scanAndCleanupDir(baseDir) {
 
           if (now - birthtimeMs > OLD_THRESHOLD_MS) {
             console.log(`Deleting old temporary directory: ${dirPath}`);
-            
+
             // Try deletion with retry logic
             let attempt = 0;
             let deleted = false;
@@ -47,10 +47,16 @@ async function scanAndCleanupDir(baseDir) {
               } catch (err) {
                 attempt++;
                 if (attempt < MAX_RETRY_ATTEMPTS) {
-                  console.warn(`Attempt ${attempt} failed for ${dirPath}: ${err.message}. Retrying in ${RETRY_DELAY_MS}ms...`);
-                  await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                  console.warn(
+                    `Attempt ${attempt} failed for ${dirPath}: ${err.message}. Retrying in ${RETRY_DELAY_MS}ms...`
+                  );
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, RETRY_DELAY_MS)
+                  );
                 } else {
-                  console.error(`Failed to delete ${dirPath} after ${MAX_RETRY_ATTEMPTS} attempts: ${err.message}`);
+                  console.error(
+                    `Failed to delete ${dirPath} after ${MAX_RETRY_ATTEMPTS} attempts: ${err.message}`
+                  );
                   errorCount++;
                 }
               }
@@ -65,10 +71,11 @@ async function scanAndCleanupDir(baseDir) {
         processedCount++;
       }
     }
-    
+
     const endTime = performance.now();
-    console.log(`Cleanup completed for ${baseDir}: ${processedCount} directories processed, ${deletedCount} deleted, ${errorCount} errors. Time: ${(endTime - startTime).toFixed(2)}ms`);
-    
+    console.log(
+      `Cleanup completed for ${baseDir}: ${processedCount} directories processed, ${deletedCount} deleted, ${errorCount} errors. Time: ${(endTime - startTime).toFixed(2)}ms`
+    );
   } catch (err) {
     console.error(`Error scanning directory ${baseDir}: ${err.message}`);
     console.error(`Full error stack: ${err.stack}`);
@@ -106,21 +113,21 @@ export function startCleanupWorker() {
   console.log(
     `Temporary directory cleanup worker started. Running every ${CLEANUP_INTERVAL_MS / 1000 / 60} minutes.`
   );
-  
+
   // Run immediately on startup
   cleanupTempDirectories().catch(console.error);
-  
+
   // Then run at intervals
   const intervalId = setInterval(() => {
     cleanupTempDirectories().catch(console.error);
   }, CLEANUP_INTERVAL_MS);
-  
+
   // Set up graceful shutdown
   process.on('SIGTERM', () => {
     console.log('Shutting down cleanup worker gracefully...');
     clearInterval(intervalId);
   });
-  
+
   process.on('SIGINT', () => {
     console.log('Shutting down cleanup worker gracefully...');
     clearInterval(intervalId);

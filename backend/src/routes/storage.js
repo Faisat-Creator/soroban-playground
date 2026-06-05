@@ -47,18 +47,26 @@ router.get('/:contractId', async (req, res) => {
   if (!contractId || !/^C[A-Z0-9]{55}$/.test(contractId)) {
     return res.status(400).json({
       success: false,
-      error: 'Invalid contract ID. Must be a 56-character Stellar contract address starting with C.',
+      error:
+        'Invalid contract ID. Must be a 56-character Stellar contract address starting with C.',
     });
   }
 
   try {
-    const { stdout } = await execFileAsync('stellar', [
-      'contract',
-      'read',
-      '--id', contractId,
-      '--network', network,
-      '--output', 'json',
-    ], { timeout: 15000 });
+    const { stdout } = await execFileAsync(
+      'stellar',
+      [
+        'contract',
+        'read',
+        '--id',
+        contractId,
+        '--network',
+        network,
+        '--output',
+        'json',
+      ],
+      { timeout: 15000 }
+    );
 
     let storage = {};
     try {
@@ -82,7 +90,12 @@ router.get('/:contractId', async (req, res) => {
     if (err.code === 'ENOENT') {
       return res.json({
         success: true,
-        data: { contractId, network, storage: {}, warning: 'Stellar CLI not available.' },
+        data: {
+          contractId,
+          network,
+          storage: {},
+          warning: 'Stellar CLI not available.',
+        },
       });
     }
 

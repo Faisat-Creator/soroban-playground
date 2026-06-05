@@ -124,10 +124,16 @@ export function createConfig(env = process.env, options = {}) {
 
   const config = {
     app: {
-      port: toInt(portSource.value, DEFAULTS.APP_PORT, portSource.key, warnings, {
-        min: 1,
-        max: 65535,
-      }),
+      port: toInt(
+        portSource.value,
+        DEFAULTS.APP_PORT,
+        portSource.key,
+        warnings,
+        {
+          min: 1,
+          max: 65535,
+        }
+      ),
       env: cleanString(
         hasValue(env.APP_ENV) ? env.APP_ENV : env.NODE_ENV,
         DEFAULTS.APP_ENV

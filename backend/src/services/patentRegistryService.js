@@ -1,9 +1,9 @@
 const DEFAULT_ADMIN =
   process.env.PATENT_ADMIN_ADDRESS ||
-  "GPATENTADMIN000000000000000000000000000000000000";
+  'GPATENTADMIN000000000000000000000000000000000000';
 const DEFAULT_VERIFIER =
   process.env.PATENT_VERIFIER_ADDRESS ||
-  "GPATENTVERIFIER000000000000000000000000000000000000";
+  'GPATENTVERIFIER000000000000000000000000000000000000';
 
 function nowIso() {
   return new Date().toISOString();
@@ -52,9 +52,9 @@ class PatentRegistryService {
       licenses: this.listLicenses(),
       metrics: {
         patentCount: patents.length,
-        verifiedCount: patents.filter((p) => p.status === "Verified").length,
+        verifiedCount: patents.filter((p) => p.status === 'Verified').length,
         licenseCount: this.licenses.length,
-        activeOffers: this.licenses.filter((l) => l.status === "Open").length,
+        activeOffers: this.licenses.filter((l) => l.status === 'Open').length,
         totalPayments: this.licenses.reduce(
           (sum, l) => sum + (l.payment_amount || 0),
           0
@@ -71,10 +71,10 @@ class PatentRegistryService {
 
   registerPatent(owner, title, metadata_uri, metadata_hash) {
     if (this.paused) {
-      throw new Error("Contract is paused");
+      throw new Error('Contract is paused');
     }
     if (!owner || !title || !metadata_uri || !metadata_hash) {
-      throw new Error("Invalid patent input");
+      throw new Error('Invalid patent input');
     }
 
     const patent = {
@@ -83,7 +83,7 @@ class PatentRegistryService {
       title,
       metadata_uri,
       metadata_hash,
-      status: "Registered",
+      status: 'Registered',
       created_at: nowSeconds(),
       updated_at: nowSeconds(),
       verified_at: null,
@@ -95,15 +95,15 @@ class PatentRegistryService {
 
   updatePatent(owner, patent_id, title, metadata_uri, metadata_hash) {
     if (this.paused) {
-      throw new Error("Contract is paused");
+      throw new Error('Contract is paused');
     }
 
     const patent = this.patents.find((p) => p.id === patent_id);
     if (!patent) {
-      throw new Error("Patent not found");
+      throw new Error('Patent not found');
     }
     if (patent.owner !== owner) {
-      throw new Error("Not patent owner");
+      throw new Error('Not patent owner');
     }
 
     patent.title = title;
@@ -116,41 +116,48 @@ class PatentRegistryService {
 
   verifyPatent(verifier, patent_id) {
     if (this.paused) {
-      throw new Error("Contract is paused");
+      throw new Error('Contract is paused');
     }
     if (verifier !== this.verifier) {
-      throw new Error("Not verifier");
+      throw new Error('Not verifier');
     }
 
     const patent = this.patents.find((p) => p.id === patent_id);
     if (!patent) {
-      throw new Error("Patent not found");
+      throw new Error('Patent not found');
     }
-    if (patent.status === "Verified") {
-      throw new Error("Already verified");
+    if (patent.status === 'Verified') {
+      throw new Error('Already verified');
     }
 
-    patent.status = "Verified";
+    patent.status = 'Verified';
     patent.verified_at = nowSeconds();
     patent.updated_at = nowSeconds();
 
     return clone(patent);
   }
 
-  createLicenseOffer(owner, patent_id, licensee, terms, payment_amount, payment_currency) {
+  createLicenseOffer(
+    owner,
+    patent_id,
+    licensee,
+    terms,
+    payment_amount,
+    payment_currency
+  ) {
     if (this.paused) {
-      throw new Error("Contract is paused");
+      throw new Error('Contract is paused');
     }
 
     const patent = this.patents.find((p) => p.id === patent_id);
     if (!patent) {
-      throw new Error("Patent not found");
+      throw new Error('Patent not found');
     }
     if (patent.owner !== owner) {
-      throw new Error("Not patent owner");
+      throw new Error('Not patent owner');
     }
-    if (patent.status !== "Verified") {
-      throw new Error("Patent not verified");
+    if (patent.status !== 'Verified') {
+      throw new Error('Patent not verified');
     }
 
     const license = {
@@ -161,7 +168,7 @@ class PatentRegistryService {
       terms,
       payment_amount,
       payment_currency,
-      status: "Open",
+      status: 'Open',
       created_at: nowSeconds(),
       accepted_at: null,
       payment_reference: null,
@@ -173,21 +180,21 @@ class PatentRegistryService {
 
   acceptLicense(licensee, patent_id, license_id, payment_reference) {
     if (this.paused) {
-      throw new Error("Contract is paused");
+      throw new Error('Contract is paused');
     }
 
     const license = this.licenses.find((l) => l.id === license_id);
     if (!license) {
-      throw new Error("License not found");
+      throw new Error('License not found');
     }
     if (license.licensee !== licensee) {
-      throw new Error("Unauthorized");
+      throw new Error('Unauthorized');
     }
-    if (license.status !== "Open") {
-      throw new Error("License already accepted");
+    if (license.status !== 'Open') {
+      throw new Error('License already accepted');
     }
 
-    license.status = "Accepted";
+    license.status = 'Accepted';
     license.accepted_at = nowSeconds();
     license.payment_reference = payment_reference;
 
@@ -197,7 +204,7 @@ class PatentRegistryService {
   getPatent(patent_id) {
     const patent = this.patents.find((p) => p.id === patent_id);
     if (!patent) {
-      throw new Error("Patent not found");
+      throw new Error('Patent not found');
     }
     return clone(patent);
   }
@@ -205,7 +212,7 @@ class PatentRegistryService {
   getLicense(license_id) {
     const license = this.licenses.find((l) => l.id === license_id);
     if (!license) {
-      throw new Error("License not found");
+      throw new Error('License not found');
     }
     return clone(license);
   }
@@ -240,7 +247,7 @@ class PatentRegistryService {
 
   setVerifier(admin, verifier) {
     if (admin !== this.admin) {
-      throw new Error("Not admin");
+      throw new Error('Not admin');
     }
     this.verifier = verifier;
     this.cachedDashboard = null;
@@ -248,7 +255,7 @@ class PatentRegistryService {
 
   pause(admin) {
     if (admin !== this.admin) {
-      throw new Error("Not admin");
+      throw new Error('Not admin');
     }
     this.paused = true;
     this.cachedDashboard = null;
@@ -256,7 +263,7 @@ class PatentRegistryService {
 
   unpause(admin) {
     if (admin !== this.admin) {
-      throw new Error("Not admin");
+      throw new Error('Not admin');
     }
     this.paused = false;
     this.cachedDashboard = null;

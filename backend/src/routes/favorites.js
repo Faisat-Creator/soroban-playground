@@ -6,8 +6,17 @@ const router = express.Router();
 
 function requireAuth(req, _res, next) {
   const walletAddress = req.headers['x-wallet-address'];
-  if (!walletAddress || typeof walletAddress !== 'string' || !walletAddress.trim()) {
-    return next(createHttpError(401, 'Authentication required. Provide x-wallet-address header.'));
+  if (
+    !walletAddress ||
+    typeof walletAddress !== 'string' ||
+    !walletAddress.trim()
+  ) {
+    return next(
+      createHttpError(
+        401,
+        'Authentication required. Provide x-wallet-address header.'
+      )
+    );
   }
   req.walletAddress = walletAddress.trim();
   next();

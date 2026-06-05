@@ -319,10 +319,10 @@ class SyntheticAssetsService {
   async getAssetPrice(assetSymbol) {
     try {
       const cached = await redisService.get(`price:${assetSymbol}`);
-        if (cached !== null) {
-          // Cached values are stored as plain strings representing numbers
-          return Number(cached);
-        }
+      if (cached !== null) {
+        // Cached values are stored as plain strings representing numbers
+        return Number(cached);
+      }
 
       const result = await invokeContract({
         contractId: this.contractId,
@@ -332,10 +332,10 @@ class SyntheticAssetsService {
       });
 
       await redisService.set(
-          `price:${assetSymbol}`,
-          String(result),
-          CACHE_TTL.ASSET_PRICE
-        );
+        `price:${assetSymbol}`,
+        String(result),
+        CACHE_TTL.ASSET_PRICE
+      );
 
       return result;
     } catch (error) {

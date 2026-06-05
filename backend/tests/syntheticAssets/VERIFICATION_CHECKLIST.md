@@ -7,6 +7,7 @@ Use this checklist during development, testing, and code review to ensure comple
 ### Service Methods Coverage
 
 #### Asset Management
+
 - [ ] `registerAsset()`
   - [ ] Success case with valid asset
   - [ ] Network timeout handling
@@ -15,6 +16,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Error logging
 
 #### Minting/Burning
+
 - [ ] `mintSynthetic()`
   - [ ] Successful mint with valid collateral
   - [ ] Insufficient collateral rejection
@@ -32,6 +34,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Cache clearing
 
 #### Collateral Management
+
 - [ ] `addCollateral()`
   - [ ] Successful addition
   - [ ] Insufficient funds rejection
@@ -40,6 +43,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Health factor improvement
 
 #### Trading Operations
+
 - [ ] `openTrade()`
   - [ ] LONG position opening
   - [ ] SHORT position opening
@@ -58,6 +62,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Event logging
 
 #### Position Retrieval
+
 - [ ] `getPosition()`
   - [ ] Cache hit scenario
   - [ ] Contract fetching on cache miss
@@ -70,6 +75,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Caching behavior
 
 #### Price Management
+
 - [ ] `updatePrice()`
   - [ ] Successful price update
   - [ ] Cache invalidation
@@ -84,6 +90,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] TTL respect
 
 #### Risk Metrics
+
 - [ ] `getCollateralRatio()`
   - [ ] Safe status
   - [ ] Warning threshold
@@ -103,6 +110,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Error handling
 
 #### Protocol Parameters
+
 - [ ] `getProtocolParams()`
   - [ ] Successful retrieval
   - [ ] Cache utilization
@@ -117,6 +125,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Event logging
 
 #### Utilities
+
 - [ ] `getMaxMintable()`
   - [ ] Calculation with collateral
   - [ ] Zero collateral handling
@@ -135,6 +144,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Registry unavailability
 
 #### Monitoring
+
 - [ ] `monitorLiquidations()`
   - [ ] Position selection from database
   - [ ] Liquidation detection
@@ -144,6 +154,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] Large volume handling
 
 ### Cache Behavior
+
 - [ ] POSITION cache (30 seconds TTL)
 - [ ] ASSET_PRICE cache (5 seconds TTL)
 - [ ] LIQUIDATION_CHECK cache (10 seconds TTL)
@@ -152,6 +163,7 @@ Use this checklist during development, testing, and code review to ensure comple
 - [ ] Cache hit/miss scenarios
 
 ### Error Handling
+
 - [ ] Contract interaction errors
 - [ ] Database errors
 - [ ] Redis errors
@@ -164,6 +176,7 @@ Use this checklist during development, testing, and code review to ensure comple
 ### POST Endpoints
 
 #### Asset Registration
+
 - [ ] `POST /register`
   - [ ] Success with valid data
   - [ ] 400 for missing symbol
@@ -173,6 +186,7 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] 500 for service error
 
 #### Asset Minting
+
 - [ ] `POST /mint`
   - [ ] Success with valid data
   - [ ] 400 for missing userAddress
@@ -182,18 +196,21 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] 500 for service error
 
 #### Asset Burning
+
 - [ ] `POST /burn`
   - [ ] Success with valid data
   - [ ] 400 for missing fields
   - [ ] 500 for service error
 
 #### Collateral Addition
+
 - [ ] `POST /add-collateral`
   - [ ] Success with valid data
   - [ ] 400 for missing fields
   - [ ] 500 for service error
 
 #### Trade Opening
+
 - [ ] `POST /open-trade`
   - [ ] Success with LONG direction
   - [ ] Success with SHORT direction
@@ -201,12 +218,14 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] 500 for service error
 
 #### Trade Closing
+
 - [ ] `POST /close-trade`
   - [ ] Success with valid data
   - [ ] 400 for missing fields
   - [ ] 500 for service error
 
 #### Price Update
+
 - [ ] `POST /price`
   - [ ] Success with valid data
   - [ ] 400 for missing assetSymbol
@@ -217,50 +236,59 @@ Use this checklist during development, testing, and code review to ensure comple
 ### GET Endpoints
 
 #### Price Retrieval
+
 - [ ] `GET /price/:symbol`
   - [ ] Success with valid symbol
   - [ ] 500 on service error
 
 #### Position Details
+
 - [ ] `GET /position/:id`
   - [ ] Success with valid ID
   - [ ] 500 on service error
 
 #### Trading Position
+
 - [ ] `GET /trade/:id`
   - [ ] Success with valid ID
   - [ ] 500 on service error
 
 #### Collateral Ratio
+
 - [ ] `GET /ratio/:id`
   - [ ] Success with valid ID
   - [ ] Response includes ratio
   - [ ] 500 on service error
 
 #### Health Factor
+
 - [ ] `GET /health/:id`
   - [ ] Success with valid ID
   - [ ] Response includes healthFactor
   - [ ] 500 on service error
 
 #### Liquidation Status
+
 - [ ] `GET /liquidatable/:id`
   - [ ] Success with valid ID
   - [ ] Returns boolean
   - [ ] 500 on service error
 
 #### Protocol Parameters
+
 - [ ] `GET /params`
   - [ ] Success retrieval
   - [ ] Response includes all params
   - [ ] 500 on service error
 
 #### Registered Assets
+
 - [ ] `GET /assets`
   - [ ] Success with valid list
   - [ ] 500 on service error
 
 #### Max Mintable
+
 - [ ] `GET /max-mintable`
   - [ ] Success with valid query params
   - [ ] 400 for missing assetSymbol
@@ -268,12 +296,14 @@ Use this checklist during development, testing, and code review to ensure comple
   - [ ] 500 on service error
 
 #### Trading PnL
+
 - [ ] `GET /pnl/:id`
   - [ ] Success with valid ID
   - [ ] Returns PnL data
   - [ ] 500 on service error
 
 #### Health Check
+
 - [ ] `GET /health`
   - [ ] Returns 200 status
   - [ ] Includes success flag
@@ -282,6 +312,7 @@ Use this checklist during development, testing, and code review to ensure comple
 ### PUT Endpoints
 
 #### Protocol Parameters Update
+
 - [ ] `PUT /params`
   - [ ] Success with all params
   - [ ] 400 for missing minCollateralRatio
@@ -295,6 +326,7 @@ Use this checklist during development, testing, and code review to ensure comple
 ### Complete Workflows
 
 #### Mint → Trade → Burn Flow
+
 - [ ] Step 1: Register asset
   - [ ] Asset registered successfully
 - [ ] Step 2: Mint synthetic assets
@@ -312,6 +344,7 @@ Use this checklist during development, testing, and code review to ensure comple
 - [ ] Verify all steps succeed
 
 #### Price Oracle Flow
+
 - [ ] Update price
   - [ ] Price updated in contract
   - [ ] Cache invalidated
@@ -324,6 +357,7 @@ Use this checklist during development, testing, and code review to ensure comple
 - [ ] Verify all steps succeed
 
 #### Protocol Management Flow
+
 - [ ] Get initial parameters
   - [ ] All params retrieved
   - [ ] Cached for future use
@@ -336,6 +370,7 @@ Use this checklist during development, testing, and code review to ensure comple
 - [ ] Verify all steps succeed
 
 #### Position Management Flow
+
 - [ ] Mint position
   - [ ] Position created
   - [ ] Initial collateral locked
@@ -356,6 +391,7 @@ Use this checklist during development, testing, and code review to ensure comple
 ### Edge Case Testing
 
 #### Invalid Input Handling
+
 - [ ] Empty symbol → rejection
 - [ ] Negative decimals → rejection
 - [ ] Negative amounts → rejection
@@ -364,12 +400,14 @@ Use this checklist during development, testing, and code review to ensure comple
 - [ ] Invalid confidence → rejection
 
 #### Contract Failure Scenarios
+
 - [ ] Deployment failure → error propagated
 - [ ] Call timeout → handled gracefully
 - [ ] Insufficient gas → error message
 - [ ] Network error → retry/failure
 
 #### Liquidation Scenarios
+
 - [ ] Health factor drops → liquidatable
 - [ ] Price drops significantly → liquidatable
 - [ ] Liquidation alert → recorded and broadcast
@@ -378,11 +416,13 @@ Use this checklist during development, testing, and code review to ensure comple
 ### Performance Testing
 
 #### Concurrent Requests
+
 - [ ] 5 simultaneous requests → all succeed
 - [ ] 10 simultaneous requests → all succeed
 - [ ] 20 concurrent operations → response time acceptable
 
 #### Large Volume Operations
+
 - [ ] Monitor 100 positions → completes
 - [ ] Monitor 500 positions → completes
 - [ ] Monitor 1000 positions → completes
@@ -399,6 +439,7 @@ Use this checklist during development, testing, and code review to ensure comple
 ### Critical Path Coverage
 
 Financial critical logic:
+
 - [ ] Collateral calculations 100%
 - [ ] Liquidation detection 100%
 - [ ] Health factor computation 100%
@@ -415,6 +456,7 @@ Financial critical logic:
 ## Phase 5: Test Quality
 
 ### Test Organization
+
 - [ ] Tests organized by describe blocks
 - [ ] Test names are descriptive
 - [ ] Test data is consistent
@@ -422,18 +464,21 @@ Financial critical logic:
 - [ ] No test interdependencies
 
 ### Test Clarity
+
 - [ ] Arrange-Act-Assert pattern used
 - [ ] Mocks clearly set up
 - [ ] Expected values clear
 - [ ] Comments explain complex logic
 
 ### Test Robustness
+
 - [ ] No timing dependencies
 - [ ] No random test data
 - [ ] Consistent results on re-run
 - [ ] No test pollution
 
 ### Mock Quality
+
 - [ ] Mocks are realistic
 - [ ] Error scenarios mocked
 - [ ] Cache behavior mocked
@@ -442,18 +487,21 @@ Financial critical logic:
 ## Phase 6: Documentation
 
 ### Code Documentation
+
 - [ ] Each test method documented
 - [ ] Test data explained
 - [ ] Mock strategy clear
 - [ ] Expected behavior specified
 
 ### User Documentation
+
 - [ ] TESTING_GUIDE.md complete
 - [ ] Examples provided
 - [ ] Troubleshooting section filled
 - [ ] Contributing guidelines clear
 
 ### CI/CD Documentation
+
 - [ ] Test scripts documented
 - [ ] Coverage reports explained
 - [ ] Failure handling documented
@@ -462,6 +510,7 @@ Financial critical logic:
 ## Phase 7: Pre-Merge Checklist
 
 ### Code Quality
+
 - [ ] No console.log statements
 - [ ] No commented out code
 - [ ] Consistent code style
@@ -469,18 +518,21 @@ Financial critical logic:
 - [ ] Proper error handling
 
 ### Performance
+
 - [ ] Full suite runs < 5 seconds
 - [ ] No memory leaks
 - [ ] No infinite loops
 - [ ] Timeouts reasonable
 
 ### Compatibility
+
 - [ ] Works with Jest 29.7.0+
 - [ ] Works with Node.js LTS
 - [ ] Works with Windows/Mac/Linux
 - [ ] Works with CI/CD pipeline
 
 ### Security
+
 - [ ] No secrets in test data
 - [ ] No hardcoded paths
 - [ ] No external API calls in tests
@@ -489,18 +541,21 @@ Financial critical logic:
 ## Phase 8: Post-Merge Verification
 
 ### CI/CD Pipeline
+
 - [ ] Tests pass in pipeline
 - [ ] Coverage reports generated
 - [ ] No regressions introduced
 - [ ] All checks passing
 
 ### Team Communication
+
 - [ ] Documentation reviewed
 - [ ] Examples understood
 - [ ] Contributing guidelines known
 - [ ] Questions answered
 
 ### Future Maintenance
+
 - [ ] Test patterns documented
 - [ ] New features testable
 - [ ] Refactoring supported

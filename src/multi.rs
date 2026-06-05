@@ -1,7 +1,7 @@
 // Copyright (c) 2026 StellarDevTools
 // SPDX-License-Identifier: MIT
 
-use crate::db::trait::{Database, Event};
+use crate::db::r#trait::{Database, Event};
 use crate::db::sqlite::SqliteDatabase;
 use crate::db::postgres::PostgresDatabase;
 use async_trait::async_trait;

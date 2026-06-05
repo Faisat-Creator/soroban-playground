@@ -34,8 +34,10 @@ jest.unstable_mockModule('../src/middleware/validation.js', () => ({
   validateInput: (_req, _res, next) => next(),
 }));
 
-const { syntheticAssetsService } = await import('../src/services/syntheticAssetsService.js');
-const { default: syntheticAssetsRouter } = await import('../src/routes/v1/synthetic-assets.js');
+const { syntheticAssetsService } =
+  await import('../src/services/syntheticAssetsService.js');
+const { default: syntheticAssetsRouter } =
+  await import('../src/routes/v1/synthetic-assets.js');
 
 import express from 'express';
 import request from 'supertest';
@@ -88,14 +90,12 @@ describe('Synthetic Assets Error Handling Tests', () => {
     });
 
     it('should return 400 for missing userAddress in mint', async () => {
-      const res = await request(app)
-        .post('/v1/synthetic-assets/mint')
-        .send({
-          // missing userAddress
-          assetSymbol: ASSET_SYMBOL,
-          collateralAmount: '1000000',
-          mintAmount: '1000000',
-        });
+      const res = await request(app).post('/v1/synthetic-assets/mint').send({
+        // missing userAddress
+        assetSymbol: ASSET_SYMBOL,
+        collateralAmount: '1000000',
+        mintAmount: '1000000',
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
@@ -156,14 +156,12 @@ describe('Synthetic Assets Error Handling Tests', () => {
         new Error('Contract call failed: insufficient gas')
       );
 
-      const res = await request(app)
-        .post('/v1/synthetic-assets/mint')
-        .send({
-          userAddress: USER_ADDRESS,
-          assetSymbol: ASSET_SYMBOL,
-          collateralAmount: '1000000',
-          mintAmount: '1000000',
-        });
+      const res = await request(app).post('/v1/synthetic-assets/mint').send({
+        userAddress: USER_ADDRESS,
+        assetSymbol: ASSET_SYMBOL,
+        collateralAmount: '1000000',
+        mintAmount: '1000000',
+      });
 
       expect(res.status).toBe(500);
       expect(res.body.success).toBe(false);
@@ -175,13 +173,11 @@ describe('Synthetic Assets Error Handling Tests', () => {
         new Error('Oracle update failed: network error')
       );
 
-      const res = await request(app)
-        .post('/v1/synthetic-assets/price')
-        .send({
-          assetSymbol: ASSET_SYMBOL,
-          newPrice: '1050000',
-          confidence: 95,
-        });
+      const res = await request(app).post('/v1/synthetic-assets/price').send({
+        assetSymbol: ASSET_SYMBOL,
+        newPrice: '1050000',
+        confidence: 95,
+      });
 
       expect(res.status).toBe(500);
       expect(res.body.success).toBe(false);
@@ -195,13 +191,11 @@ describe('Synthetic Assets Error Handling Tests', () => {
         new Error('Database connection failed')
       );
 
-      const res = await request(app)
-        .get('/v1/synthetic-assets/health')
-        .send();
+      const res = await request(app).get('/v1/synthetic-assets/health').send();
 
       // Since health endpoint doesn't use monitorLiquidations, we need to test a route that does
       // Let's test the monitorLiquidations route directly if it exists, or use a different approach
-      
+
       // For now, test the integration by mocking the database service directly
       // This will be covered in database integration tests
       expect(true).toBe(true); // placeholder
@@ -222,14 +216,12 @@ describe('Synthetic Assets Error Handling Tests', () => {
         new Error('Negative amount not allowed')
       );
 
-      const res = await request(app)
-        .post('/v1/synthetic-assets/mint')
-        .send({
-          userAddress: USER_ADDRESS,
-          assetSymbol: ASSET_SYMBOL,
-          collateralAmount: '-1000000', // negative amount
-          mintAmount: '1000000',
-        });
+      const res = await request(app).post('/v1/synthetic-assets/mint').send({
+        userAddress: USER_ADDRESS,
+        assetSymbol: ASSET_SYMBOL,
+        collateralAmount: '-1000000', // negative amount
+        mintAmount: '1000000',
+      });
 
       expect(res.status).toBe(500);
       expect(res.body.success).toBe(false);

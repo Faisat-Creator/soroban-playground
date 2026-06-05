@@ -32,7 +32,9 @@ jest.unstable_mockModule('../src/database/connection.js', () => ({
   },
   getDatabase: () => {
     if (!testDb) {
-      throw new Error('Database not initialized. Call initializeDatabase() first.');
+      throw new Error(
+        'Database not initialized. Call initializeDatabase() first.'
+      );
     }
     return testDb;
   },
@@ -45,8 +47,10 @@ jest.unstable_mockModule('../src/database/connection.js', () => ({
 }));
 
 // Import connection utilities and ApiKeyService after mocking connection.js
-const { initializeDatabase, closeDatabase } = await import('../src/database/connection.js');
-const { default: apiKeyService } = await import('../src/services/apiKeyService.js');
+const { initializeDatabase, closeDatabase } =
+  await import('../src/database/connection.js');
+const { default: apiKeyService } =
+  await import('../src/services/apiKeyService.js');
 
 describe('ApiKeyService (Auth Service)', () => {
   beforeAll(async () => {
@@ -62,7 +66,7 @@ describe('ApiKeyService (Auth Service)', () => {
     await testDb.run('DELETE FROM rate_limit_usage');
     await testDb.run('DELETE FROM audit_log');
     await testDb.run('DELETE FROM api_keys');
-    
+
     // Re-populate default tier limits
     await testDb.run('DELETE FROM tier_limits');
     await testDb.run(`
@@ -100,7 +104,9 @@ describe('ApiKeyService (Auth Service)', () => {
       expect(keyData).toHaveProperty('createdAt');
 
       // Verify database record
-      const dbRow = await testDb.get('SELECT * FROM api_keys WHERE id = ?', [keyData.id]);
+      const dbRow = await testDb.get('SELECT * FROM api_keys WHERE id = ?', [
+        keyData.id,
+      ]);
       expect(dbRow).toBeTruthy();
       expect(dbRow.name).toBe(params.name);
       expect(dbRow.key_prefix).toBe(keyData.keyPrefix);
@@ -116,7 +122,7 @@ describe('ApiKeyService (Auth Service)', () => {
       );
       expect(auditRow).toBeTruthy();
       expect(auditRow.user_id).toBe(params.userId);
-      
+
       const metadata = JSON.parse(auditRow.metadata);
       expect(metadata.tier).toBe(params.tier);
       expect(metadata.name).toBe(params.name);
@@ -130,7 +136,9 @@ describe('ApiKeyService (Auth Service)', () => {
 
       expect(keyData.tier).toBe('free');
 
-      const dbRow = await testDb.get('SELECT * FROM api_keys WHERE id = ?', [keyData.id]);
+      const dbRow = await testDb.get('SELECT * FROM api_keys WHERE id = ?', [
+        keyData.id,
+      ]);
       expect(dbRow.tier).toBe('free');
     });
   });
@@ -141,7 +149,9 @@ describe('ApiKeyService (Auth Service)', () => {
       const resultNull = await apiKeyService.validateKey(null);
       const resultUndefined = await apiKeyService.validateKey(undefined);
       const resultEmpty = await apiKeyService.validateKey('');
-      const resultNonExistent = await apiKeyService.validateKey('sk_nonexistentkeyhash12345');
+      const resultNonExistent = await apiKeyService.validateKey(
+        'sk_nonexistentkeyhash12345'
+      );
 
       expect(resultNull).toBeNull();
       expect(resultUndefined).toBeNull();
@@ -170,7 +180,10 @@ describe('ApiKeyService (Auth Service)', () => {
       expect(validation1.usageCount).toBe(1);
 
       // Check database update
-      let dbRow = await testDb.get('SELECT usage_count, last_used_at FROM api_keys WHERE id = ?', [keyData.id]);
+      let dbRow = await testDb.get(
+        'SELECT usage_count, last_used_at FROM api_keys WHERE id = ?',
+        [keyData.id]
+      );
       expect(dbRow.usage_count).toBe(1);
       expect(dbRow.last_used_at).not.toBeNull();
 
@@ -178,7 +191,10 @@ describe('ApiKeyService (Auth Service)', () => {
       const validation2 = await apiKeyService.validateKey(keyData.key);
       expect(validation2.usageCount).toBe(2);
 
-      dbRow = await testDb.get('SELECT usage_count FROM api_keys WHERE id = ?', [keyData.id]);
+      dbRow = await testDb.get(
+        'SELECT usage_count FROM api_keys WHERE id = ?',
+        [keyData.id]
+      );
       expect(dbRow.usage_count).toBe(2);
     });
 
@@ -196,7 +212,10 @@ describe('ApiKeyService (Auth Service)', () => {
       expect(validation).toBeNull();
 
       // Verify status has updated to 'expired'
-      const dbRow = await testDb.get('SELECT status FROM api_keys WHERE id = ?', [keyData.id]);
+      const dbRow = await testDb.get(
+        'SELECT status FROM api_keys WHERE id = ?',
+        [keyData.id]
+      );
       expect(dbRow.status).toBe('expired');
 
       // Verify revocation was logged to audit
@@ -247,11 +266,20 @@ describe('ApiKeyService (Auth Service)', () => {
     });
 
     it('returns all keys for a user in descending order of creation', async () => {
-      const key1 = await apiKeyService.generateKey({ name: 'Key 1', userId: 1 });
+      const key1 = await apiKeyService.generateKey({
+        name: 'Key 1',
+        userId: 1,
+      });
       // Adjust created_at to ensure distinct ordering
-      await testDb.run("UPDATE api_keys SET created_at = datetime('now', '-2 seconds') WHERE id = ?", [key1.id]);
+      await testDb.run(
+        "UPDATE api_keys SET created_at = datetime('now', '-2 seconds') WHERE id = ?",
+        [key1.id]
+      );
 
-      const key2 = await apiKeyService.generateKey({ name: 'Key 2', userId: 1 });
+      const key2 = await apiKeyService.generateKey({
+        name: 'Key 2',
+        userId: 1,
+      });
 
       const keysList = await apiKeyService.listKeys(1);
       expect(keysList).toHaveLength(2);
@@ -260,27 +288,50 @@ describe('ApiKeyService (Auth Service)', () => {
     });
 
     it('filters keys by status', async () => {
-      const activeKey = await apiKeyService.generateKey({ name: 'Active', userId: 1 });
-      const revokedKey = await apiKeyService.generateKey({ name: 'Revoked', userId: 1 });
+      const activeKey = await apiKeyService.generateKey({
+        name: 'Active',
+        userId: 1,
+      });
+      const revokedKey = await apiKeyService.generateKey({
+        name: 'Revoked',
+        userId: 1,
+      });
       await apiKeyService.revokeKey(revokedKey.id, 'revoked');
 
       const activeKeys = await apiKeyService.listKeys(1, { status: 'active' });
       expect(activeKeys).toHaveLength(1);
       expect(activeKeys[0].id).toBe(activeKey.id);
 
-      const inactiveKeys = await apiKeyService.listKeys(1, { status: 'revoked' });
+      const inactiveKeys = await apiKeyService.listKeys(1, {
+        status: 'revoked',
+      });
       expect(inactiveKeys).toHaveLength(1);
       expect(inactiveKeys[0].id).toBe(revokedKey.id);
     });
 
     it('paginates list using limit and offset', async () => {
-      const key1 = await apiKeyService.generateKey({ name: 'Key 1', userId: 2 });
-      await testDb.run("UPDATE api_keys SET created_at = datetime('now', '-3 seconds') WHERE id = ?", [key1.id]);
+      const key1 = await apiKeyService.generateKey({
+        name: 'Key 1',
+        userId: 2,
+      });
+      await testDb.run(
+        "UPDATE api_keys SET created_at = datetime('now', '-3 seconds') WHERE id = ?",
+        [key1.id]
+      );
 
-      const key2 = await apiKeyService.generateKey({ name: 'Key 2', userId: 2 });
-      await testDb.run("UPDATE api_keys SET created_at = datetime('now', '-2 seconds') WHERE id = ?", [key2.id]);
+      const key2 = await apiKeyService.generateKey({
+        name: 'Key 2',
+        userId: 2,
+      });
+      await testDb.run(
+        "UPDATE api_keys SET created_at = datetime('now', '-2 seconds') WHERE id = ?",
+        [key2.id]
+      );
 
-      const key3 = await apiKeyService.generateKey({ name: 'Key 3', userId: 2 });
+      const key3 = await apiKeyService.generateKey({
+        name: 'Key 3',
+        userId: 2,
+      });
 
       // First page (2 items)
       const page1 = await apiKeyService.listKeys(2, { limit: 2, offset: 0 });
@@ -307,7 +358,10 @@ describe('ApiKeyService (Auth Service)', () => {
       await apiKeyService.revokeKey(keyData.id, 'expired');
 
       // Check status updated
-      const dbRow = await testDb.get('SELECT status, updated_at FROM api_keys WHERE id = ?', [keyData.id]);
+      const dbRow = await testDb.get(
+        'SELECT status, updated_at FROM api_keys WHERE id = ?',
+        [keyData.id]
+      );
       expect(dbRow.status).toBe('expired');
       expect(dbRow.updated_at).not.toBeNull();
 
@@ -328,7 +382,10 @@ describe('ApiKeyService (Auth Service)', () => {
 
       await apiKeyService.revokeKey(keyData.id);
 
-      const dbRow = await testDb.get('SELECT status FROM api_keys WHERE id = ?', [keyData.id]);
+      const dbRow = await testDb.get(
+        'SELECT status FROM api_keys WHERE id = ?',
+        [keyData.id]
+      );
       expect(dbRow.status).toBe('revoked');
     });
   });
@@ -349,7 +406,6 @@ describe('ApiKeyService (Auth Service)', () => {
       global.Date = class extends RealDate {
         constructor(...args) {
           if (args.length) {
-            // eslint-disable-next-line new-cap
             return new RealDate(...args);
           }
           return constantTime;
@@ -363,7 +419,10 @@ describe('ApiKeyService (Auth Service)', () => {
         // First call (creates entry with request_count = 1)
         await apiKeyService.trackUsage(keyData.id, '/api/compile', 'free');
 
-        const usageRow = await testDb.get('SELECT * FROM rate_limit_usage WHERE api_key_id = ?', [keyData.id]);
+        const usageRow = await testDb.get(
+          'SELECT * FROM rate_limit_usage WHERE api_key_id = ?',
+          [keyData.id]
+        );
         expect(usageRow).toBeTruthy();
         expect(usageRow.endpoint).toBe('/api/compile');
         expect(usageRow.request_count).toBe(1);
@@ -393,7 +452,9 @@ describe('ApiKeyService (Auth Service)', () => {
         metadata: { requestIp: '127.0.0.1', isSuccessful: true },
       });
 
-      const auditRow = await testDb.get('SELECT * FROM audit_log WHERE user_id = 200');
+      const auditRow = await testDb.get(
+        'SELECT * FROM audit_log WHERE user_id = 200'
+      );
       expect(auditRow).toBeTruthy();
       expect(auditRow.api_key_id).toBe(10);
       expect(auditRow.action).toBe('custom_action');
@@ -429,7 +490,12 @@ describe('ApiKeyService (Auth Service)', () => {
       await testDb.run(
         `INSERT INTO audit_log (api_key_id, user_id, action, metadata)
          VALUES (?, ?, ?, ?)`,
-        [keyData.id, 9, 'rate_limit_exceeded', JSON.stringify({ endpoint: '/api/compile' })]
+        [
+          keyData.id,
+          9,
+          'rate_limit_exceeded',
+          JSON.stringify({ endpoint: '/api/compile' }),
+        ]
       );
 
       const stats = await apiKeyService.getUsageStats(keyData.id, { days: 7 });
@@ -438,8 +504,14 @@ describe('ApiKeyService (Auth Service)', () => {
       expect(stats.dailyUsage[0].requests).toBe(35); // 25 + 10
 
       expect(stats.endpointUsage).toHaveLength(2);
-      expect(stats.endpointUsage[0]).toEqual({ endpoint: '/api/compile', requests: 25 });
-      expect(stats.endpointUsage[1]).toEqual({ endpoint: '/api/deploy', requests: 10 });
+      expect(stats.endpointUsage[0]).toEqual({
+        endpoint: '/api/compile',
+        requests: 25,
+      });
+      expect(stats.endpointUsage[1]).toEqual({
+        endpoint: '/api/deploy',
+        requests: 10,
+      });
 
       expect(stats.violations).toHaveLength(1);
       expect(stats.violations[0].count).toBe(1);

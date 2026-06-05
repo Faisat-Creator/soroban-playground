@@ -74,9 +74,12 @@ describe('error middleware', () => {
       throw syncError;
     });
 
-    assert.throws(() => {
-      handler({}, {}, () => {});
-    }, (err) => err === syncError);
+    assert.throws(
+      () => {
+        handler({}, {}, () => {});
+      },
+      (err) => err === syncError
+    );
   });
 
   test('asyncHandler forwards rejected async errors', async () => {
@@ -169,7 +172,9 @@ describe('error middleware', () => {
     try {
       // 500 error: returns original message and details
       let res = createMockRes();
-      const err500 = createHttpError(500, 'DB connection failed', { stack: 'db:123' });
+      const err500 = createHttpError(500, 'DB connection failed', {
+        stack: 'db:123',
+      });
       errorHandler(err500, {}, res, () => {});
       assert.equal(res.statusCode, 500);
       assert.deepEqual(res.payload, {
@@ -180,7 +185,9 @@ describe('error middleware', () => {
 
       // 400 error: returns details and original message
       res = createMockRes();
-      const err400 = createHttpError(400, 'Invalid parameters', ['missing email']);
+      const err400 = createHttpError(400, 'Invalid parameters', [
+        'missing email',
+      ]);
       errorHandler(err400, {}, res, () => {});
       assert.equal(res.statusCode, 400);
       assert.deepEqual(res.payload, {
@@ -234,7 +241,9 @@ describe('error middleware', () => {
     try {
       // 4xx error: does NOT mask message, but does exclude details
       const res = createMockRes();
-      const err400 = createHttpError(400, 'Invalid parameters', ['missing email']);
+      const err400 = createHttpError(400, 'Invalid parameters', [
+        'missing email',
+      ]);
       errorHandler(err400, {}, res, () => {});
       assert.equal(res.statusCode, 400);
       assert.deepEqual(res.payload, {

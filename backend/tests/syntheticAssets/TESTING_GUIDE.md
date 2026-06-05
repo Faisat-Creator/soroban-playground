@@ -13,6 +13,7 @@ The test suite is organized into three complementary layers:
 Unit tests provide isolated testing of individual service methods with mocked dependencies.
 
 #### Coverage Areas
+
 - **Asset Management**: `registerAsset()` - Registration with validation
 - **Minting Operations**: `mintSynthetic()` - Position creation with collateral
 - **Burning Operations**: `burnSynthetic()` - Position closure with refund
@@ -26,6 +27,7 @@ Unit tests provide isolated testing of individual service methods with mocked de
 - **Monitoring**: `monitorLiquidations()` - Liquidation tracking
 
 #### Test Patterns
+
 - Success cases with valid inputs
 - Error handling with specific error messages
 - Edge cases (zero values, boundary conditions)
@@ -33,15 +35,18 @@ Unit tests provide isolated testing of individual service methods with mocked de
 - Database interactions and logging
 
 #### Example Test Structure
+
 ```javascript
 describe('SyntheticAssetsService - methodName', () => {
   it('should perform action successfully with valid inputs', async () => {
     // Setup
-    service.method.mockResolvedValue({ /* expected result */ });
-    
+    service.method.mockResolvedValue({
+      /* expected result */
+    });
+
     // Execute
     const result = await service.method(/* args */);
-    
+
     // Verify
     expect(result.property).toBe(expectedValue);
     expect(service.method).toHaveBeenCalledWith(/* expected args */);
@@ -50,7 +55,7 @@ describe('SyntheticAssetsService - methodName', () => {
   it('should handle error condition', async () => {
     // Setup
     service.method.mockRejectedValue(new Error('error message'));
-    
+
     // Execute & Verify
     await expect(service.method(/* args */)).rejects.toThrow('error message');
   });
@@ -62,6 +67,7 @@ describe('SyntheticAssetsService - methodName', () => {
 Integration tests validate HTTP API endpoints with mocked service layer and Express application.
 
 #### Endpoint Coverage
+
 - **POST /register** - Asset registration
 - **POST /mint** - Asset minting
 - **POST /burn** - Asset burning
@@ -83,6 +89,7 @@ Integration tests validate HTTP API endpoints with mocked service layer and Expr
 - **GET /health** - API health check
 
 #### Test Patterns
+
 - Valid request/response validation
 - Missing required field validation (400 errors)
 - Service error propagation (500 errors)
@@ -90,6 +97,7 @@ Integration tests validate HTTP API endpoints with mocked service layer and Expr
 - Status code verification
 
 #### Example Integration Test
+
 ```javascript
 describe('POST /v1/synthetic-assets/mint', () => {
   it('mints synthetic assets successfully', async () => {
@@ -99,14 +107,12 @@ describe('POST /v1/synthetic-assets/mint', () => {
       data: { position_id: POSITION_ID },
     });
 
-    const res = await request(app)
-      .post('/v1/synthetic-assets/mint')
-      .send({
-        userAddress: USER_ADDRESS,
-        assetSymbol: ASSET_SYMBOL,
-        collateralAmount: '1000000',
-        mintAmount: '1000000',
-      });
+    const res = await request(app).post('/v1/synthetic-assets/mint').send({
+      userAddress: USER_ADDRESS,
+      assetSymbol: ASSET_SYMBOL,
+      collateralAmount: '1000000',
+      mintAmount: '1000000',
+    });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -114,13 +120,11 @@ describe('POST /v1/synthetic-assets/mint', () => {
   });
 
   it('returns 400 for missing required fields', async () => {
-    const res = await request(app)
-      .post('/v1/synthetic-assets/mint')
-      .send({
-        userAddress: USER_ADDRESS,
-        assetSymbol: ASSET_SYMBOL,
-        // missing collateralAmount and mintAmount
-      });
+    const res = await request(app).post('/v1/synthetic-assets/mint').send({
+      userAddress: USER_ADDRESS,
+      assetSymbol: ASSET_SYMBOL,
+      // missing collateralAmount and mintAmount
+    });
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -133,6 +137,7 @@ describe('POST /v1/synthetic-assets/mint', () => {
 E2E tests simulate complete business workflows across multiple operations.
 
 #### Business Flows Tested
+
 - **Complete Lifecycle**: Register → Mint → Trade → Burn
 - **Price Oracle Flow**: Update → Retrieve → Monitor
 - **Protocol Management**: Get → Update → Verify
@@ -142,6 +147,7 @@ E2E tests simulate complete business workflows across multiple operations.
 - **Performance**: Concurrent request handling, large position batches
 
 #### Example E2E Test
+
 ```javascript
 it('executes complete flow: register → mint → open trade → close trade → burn', async () => {
   // Step 1: Register asset
@@ -192,6 +198,7 @@ it('executes complete flow: register → mint → open trade → close trade →
 ## Running Tests
 
 ### Prerequisites
+
 ```bash
 # Ensure all dependencies are installed
 npm install
@@ -203,16 +210,19 @@ npm run init-db
 ### Running Test Suite
 
 #### Run all tests
+
 ```bash
 npm test
 ```
 
 #### Run synthetic assets tests only
+
 ```bash
 npm run test:synthetic
 ```
 
 #### Run specific test categories
+
 ```bash
 # Unit tests
 npm run test:unit
@@ -228,11 +238,13 @@ npm run test:all
 ```
 
 #### Run with coverage report
+
 ```bash
 npm run test:coverage
 ```
 
 #### Watch mode (re-run on file changes)
+
 ```bash
 npm run test:watch
 ```
@@ -241,14 +253,14 @@ npm run test:watch
 
 The test suite aims for the following coverage metrics:
 
-| Category | Target | Status |
-|----------|--------|--------|
-| Service Methods | 100% | ✓ |
-| API Endpoints | 100% | ✓ |
-| Critical Financial Logic | 100% | ✓ |
-| Edge Cases | >95% | ✓ |
-| Error Handling | >90% | ✓ |
-| **Overall Coverage** | **≥85%** | ✓ |
+| Category                 | Target   | Status |
+| ------------------------ | -------- | ------ |
+| Service Methods          | 100%     | ✓      |
+| API Endpoints            | 100%     | ✓      |
+| Critical Financial Logic | 100%     | ✓      |
+| Edge Cases               | >95%     | ✓      |
+| Error Handling           | >90%     | ✓      |
+| **Overall Coverage**     | **≥85%** | ✓      |
 
 ## Test Data and Constants
 
@@ -260,12 +272,14 @@ const USER_ADDRESS = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';
 const POSITION_ID = '1234567890';
 const TRADE_POSITION_ID = '9876543210';
 const ASSET_SYMBOL = 'sUSD';
-const COLLATERAL_TOKEN = 'GBUQWP3BOUZX34ULNQG23RQ6F4OFSAI5HY2S5KY74ESDTCVUJT5DTGWF';
+const COLLATERAL_TOKEN =
+  'GBUQWP3BOUZX34ULNQG23RQ6F4OFSAI5HY2S5KY74ESDTCVUJT5DTGWF';
 ```
 
 ## Mocking Strategy
 
 ### Service Mocking
+
 All external dependencies are mocked for unit and integration tests:
 
 ```javascript
@@ -279,6 +293,7 @@ jest.unstable_mockModule('../src/services/syntheticAssetsService.js', () => ({
 ```
 
 ### Database Mocking
+
 Database operations are mocked to avoid dependencies:
 
 ```javascript
@@ -290,6 +305,7 @@ jest.unstable_mockModule('../src/services/databaseService.js', () => ({
 ```
 
 ### Cache Mocking
+
 Redis operations are mocked for cache tests:
 
 ```javascript
@@ -305,6 +321,7 @@ jest.unstable_mockModule('../src/services/redisService.js', () => ({
 ## Test Scenarios
 
 ### Scenario 1: Successful Asset Minting
+
 ```
 1. User calls /mint endpoint with valid collateral
 2. Service validates collateral amount
@@ -315,6 +332,7 @@ jest.unstable_mockModule('../src/services/redisService.js', () => ({
 ```
 
 ### Scenario 2: Liquidation Detection
+
 ```
 1. Monitor service checks open positions
 2. For each position, calculate health factor
@@ -326,6 +344,7 @@ jest.unstable_mockModule('../src/services/redisService.js', () => ({
 ```
 
 ### Scenario 3: Price Oracle Update
+
 ```
 1. Oracle provides price update
 2. Service validates price and confidence
@@ -338,21 +357,25 @@ jest.unstable_mockModule('../src/services/redisService.js', () => ({
 ## Debugging Tests
 
 ### Enable Debug Logging
+
 ```bash
 DEBUG=* npm run test:synthetic
 ```
 
 ### Run Single Test
+
 ```bash
 npm test -- syntheticAssets.unit.test.js --testNamePattern="should mint synthetic"
 ```
 
 ### Run With Detailed Output
+
 ```bash
 npm test -- --verbose
 ```
 
 ### Generate Coverage Report
+
 ```bash
 npm run test:coverage
 open coverage/index.html
@@ -376,8 +399,12 @@ Use this template for new test cases:
 describe('SyntheticAssetsService - newMethod', () => {
   it('should perform expected action with valid inputs', async () => {
     // Arrange - Set up test data and mocks
-    const input = { /* test data */ };
-    syntheticAssetsService.newMethod.mockResolvedValue({ /* expected result */ });
+    const input = {
+      /* test data */
+    };
+    syntheticAssetsService.newMethod.mockResolvedValue({
+      /* expected result */
+    });
 
     // Act - Call the method
     const result = await syntheticAssetsService.newMethod(input);
@@ -389,10 +416,14 @@ describe('SyntheticAssetsService - newMethod', () => {
 
   it('should handle error condition gracefully', async () => {
     // Arrange
-    syntheticAssetsService.newMethod.mockRejectedValue(new Error('Expected error'));
+    syntheticAssetsService.newMethod.mockRejectedValue(
+      new Error('Expected error')
+    );
 
     // Act & Assert
-    await expect(syntheticAssetsService.newMethod(input)).rejects.toThrow('Expected error');
+    await expect(syntheticAssetsService.newMethod(input)).rejects.toThrow(
+      'Expected error'
+    );
   });
 });
 ```
@@ -418,12 +449,14 @@ If tests are running slower than expected:
 ### Common Issues
 
 #### "Module not found" errors
+
 ```
 Solution: Ensure all imports use correct relative paths
 Check: babel.config.cjs is properly configured
 ```
 
 #### Async test timeout
+
 ```
 Solution: Increase jest timeout:
 jest.setTimeout(10000);
@@ -432,12 +465,14 @@ Or fix the promise chain
 ```
 
 #### Mock not being called
+
 ```
 Solution: Verify clearAllMocks() is in beforeEach
 Check: Mock is set before the actual code runs
 ```
 
 #### Cache pollution between tests
+
 ```
 Solution: Ensure redisService.delete() is called in cleanup
 Add: beforeEach(() => { jest.clearAllMocks(); });

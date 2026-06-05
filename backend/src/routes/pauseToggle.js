@@ -49,7 +49,8 @@ function sendError(res, status, message) {
  */
 router.post('/init', rateLimitMiddleware('invoke'), async (req, res) => {
   const missing = requireFields(req.body, ['contractId', 'admin']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
   try {
     const data = await service.initialize(req.body.contractId, req.body.admin);
     return res.json({ success: true, data });
@@ -83,7 +84,8 @@ router.post('/init', rateLimitMiddleware('invoke'), async (req, res) => {
  */
 router.post('/pause', rateLimitMiddleware('invoke'), async (req, res) => {
   const missing = requireFields(req.body, ['contractId', 'caller']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
   try {
     const data = await service.pause(
       req.body.contractId,
@@ -118,7 +120,8 @@ router.post('/pause', rateLimitMiddleware('invoke'), async (req, res) => {
  */
 router.post('/unpause', rateLimitMiddleware('invoke'), async (req, res) => {
   const missing = requireFields(req.body, ['contractId', 'caller']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
   try {
     const data = await service.unpause(req.body.contractId, req.body.caller);
     return res.json({ success: true, data });

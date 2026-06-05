@@ -16,7 +16,11 @@
     "test": "jest",
     "init-db": "node src/database/init.js"
   },
-  "keywords": ["soroban", "stellar", "playground"],
+  "keywords": [
+    "soroban",
+    "stellar",
+    "playground"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

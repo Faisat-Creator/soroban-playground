@@ -15,7 +15,7 @@ const initialCriteria: FilterCriteria = {
 
 const initialState = { criteria: initialCriteria, resultsCount: 0 };
 
-function filterReducer(state, action) {
+function filterReducer(state: typeof initialState, action: any) {
   switch (action.type) {
     case "SET_SEARCH":
       return {

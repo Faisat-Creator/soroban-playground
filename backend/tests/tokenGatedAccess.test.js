@@ -21,7 +21,9 @@ function buildApp() {
   app.use('/api/token-gated', tokenGatedRoute);
   // Minimal error handler
   app.use((err, _req, res, _next) => {
-    res.status(err.status || 500).json({ success: false, message: err.message });
+    res
+      .status(err.status || 500)
+      .json({ success: false, message: err.message });
   });
   return app;
 }
@@ -38,9 +40,12 @@ describe('Token-Gated Access API', () => {
   // ── Mint ──────────────────────────────────────────────────────────────────
 
   test('POST /mint creates a membership', async () => {
-    const res = await request(app)
-      .post('/api/token-gated/mint')
-      .send({ admin: 'GADMIN', recipient: 'GUSER1', tier: 'Basic', metadataUri: 'ipfs://x' });
+    const res = await request(app).post('/api/token-gated/mint').send({
+      admin: 'GADMIN',
+      recipient: 'GUSER1',
+      tier: 'Basic',
+      metadataUri: 'ipfs://x',
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
@@ -128,7 +133,9 @@ describe('Token-Gated Access API', () => {
       .send({ admin: 'GADMIN', recipient: 'GREVOKE', tier: 'Basic' });
 
     const tokenId = mintRes.body.data.tokenId;
-    const revokeRes = await request(app).delete(`/api/token-gated/revoke/${tokenId}`);
+    const revokeRes = await request(app).delete(
+      `/api/token-gated/revoke/${tokenId}`
+    );
     expect(revokeRes.status).toBe(200);
 
     // Access should now be denied

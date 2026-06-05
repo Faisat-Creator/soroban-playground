@@ -381,7 +381,7 @@ function DocumentationModal({
         <TemplateDocumentation
           template={template}
           onClose={onClose}
-          onDeploy={() => {
+          onDeploy={async (templateId: string) => {
             onDeploy();
           }}
           isDeploying={isDeploying}

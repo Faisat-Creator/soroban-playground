@@ -22,7 +22,12 @@ export async function initialize(
   if (circuitBreakerBps !== null) args.circuit_breaker_bps = circuitBreakerBps;
   if (minSources !== null) args.min_sources = minSources;
 
-  return invokeContract({ contractId, functionName: 'initialize', args, network: 'testnet' });
+  return invokeContract({
+    contractId,
+    functionName: 'initialize',
+    args,
+    network: 'testnet',
+  });
 }
 
 export async function addSource(contractId, admin, name, weight) {
@@ -68,7 +73,13 @@ export async function setStrategy(contractId, admin, strategy) {
   });
 }
 
-export async function updatePrice(contractId, sourceAddr, sourceId, asset, price) {
+export async function updatePrice(
+  contractId,
+  sourceAddr,
+  sourceId,
+  asset,
+  price
+) {
   const result = await invokeContract({
     contractId,
     functionName: 'update_price',

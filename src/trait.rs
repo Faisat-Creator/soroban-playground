@@ -4,7 +4,7 @@
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, sqlx::FromRow)]
 pub struct Event {
     pub id: i64,
     pub contract_id: String,

@@ -111,8 +111,8 @@ impl BackupService {
             if let Some(ts_str) = backup.strip_prefix("backup_").and_then(|s| s.strip_suffix(".enc")) {
                 if let Ok(ts) = ts_str.parse::<i64>() {
                     // Using chrono 0.4.x compatible timestamp mapping
-                    if let Some(naive) = chrono::NaiveDateTime::from_timestamp_opt(ts, 0) {
-                        let backup_time = chrono::DateTime::<Utc>::from_utc(naive, Utc);
+                    if let Some(naive) = chrono::DateTime::from_timestamp(ts, 0).map(|dt| dt.naive_utc()) {
+                        let backup_time = chrono::DateTime::<Utc>::from_naive_utc_and_offset(naive, Utc);
                         if now.signed_duration_since(backup_time) > limit {
                             println!("[INFO] Deleting old backup: {}", backup);
                             self.storage.delete(&backup).await?;

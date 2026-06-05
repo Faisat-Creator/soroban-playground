@@ -54,7 +54,11 @@ jest.unstable_mockModule('../src/utils/logger.js', () => ({
   },
 }));
 
-let syntheticAssetsService, databaseService, redisService, invokeContract, logger;
+let syntheticAssetsService,
+  databaseService,
+  redisService,
+  invokeContract,
+  logger;
 
 beforeAll(async () => {
   const mod1 = await import('../src/services/syntheticAssetsService.js');
@@ -79,7 +83,12 @@ describe('SyntheticAssetsService Unit Tests', () => {
 
   describe('registerAsset', () => {
     it('registers asset metadata successfully', async () => {
-      const asset = { symbol: 'sTSLA', name: 'Synthetic Tesla', decimals: 7, initialPrice: 100 };
+      const asset = {
+        symbol: 'sTSLA',
+        name: 'Synthetic Tesla',
+        decimals: 7,
+        initialPrice: 100,
+      };
       invokeContract.mockResolvedValue({ txHash: '0x123' });
       redisService.set.mockResolvedValue('OK');
       databaseService.query.mockResolvedValue({ changes: 1 });
@@ -93,7 +102,11 @@ describe('SyntheticAssetsService Unit Tests', () => {
         params: ['sTSLA', 'Synthetic Tesla', 7, 100],
         auth: true,
       });
-      expect(redisService.set).toHaveBeenCalledWith('asset:sTSLA', JSON.stringify(asset), 300);
+      expect(redisService.set).toHaveBeenCalledWith(
+        'asset:sTSLA',
+        JSON.stringify(asset),
+        300
+      );
       expect(databaseService.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO synthetic_asset_events'),
         expect.arrayContaining(['REGISTER', 'sTSLA'])
@@ -101,10 +114,17 @@ describe('SyntheticAssetsService Unit Tests', () => {
     });
 
     it('handles and propagates registration failures', async () => {
-      const asset = { symbol: 'sTSLA', name: 'Synthetic Tesla', decimals: 7, initialPrice: 100 };
+      const asset = {
+        symbol: 'sTSLA',
+        name: 'Synthetic Tesla',
+        decimals: 7,
+        initialPrice: 100,
+      };
       invokeContract.mockRejectedValue(new Error('Contract invocation failed'));
 
-      await expect(syntheticAssetsService.registerAsset(asset)).rejects.toThrow('Contract invocation failed');
+      await expect(syntheticAssetsService.registerAsset(asset)).rejects.toThrow(
+        'Contract invocation failed'
+      );
       expect(logger.error).toHaveBeenCalled();
     });
   });
@@ -114,7 +134,12 @@ describe('SyntheticAssetsService Unit Tests', () => {
       invokeContract.mockResolvedValue({ position_id: 'pos-123' });
       databaseService.query.mockResolvedValue({ changes: 1 });
 
-      const result = await syntheticAssetsService.mintSynthetic('user-addr', 'sTSLA', 1000, 500);
+      const result = await syntheticAssetsService.mintSynthetic(
+        'user-addr',
+        'sTSLA',
+        1000,
+        500
+      );
 
       expect(result.success).toBe(true);
       expect(result.positionId).toBe('pos-123');
@@ -126,18 +151,35 @@ describe('SyntheticAssetsService Unit Tests', () => {
       });
       expect(databaseService.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO positions'),
-        ['pos-123', 'user-addr', 'sTSLA', 1000, 500, undefined, undefined, undefined, 'COLLATERAL', 'OPEN']
+        [
+          'pos-123',
+          'user-addr',
+          'sTSLA',
+          1000,
+          500,
+          undefined,
+          undefined,
+          undefined,
+          'COLLATERAL',
+          'OPEN',
+        ]
       );
       expect(databaseService.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO synthetic_asset_events'),
-        ['MINT', 'sTSLA', JSON.stringify({ user: 'user-addr', collateral: 1000, minted: 500 })]
+        [
+          'MINT',
+          'sTSLA',
+          JSON.stringify({ user: 'user-addr', collateral: 1000, minted: 500 }),
+        ]
       );
     });
 
     it('propagates failure on mint error', async () => {
       invokeContract.mockRejectedValue(new Error('Mint failed'));
 
-      await expect(syntheticAssetsService.mintSynthetic('user-addr', 'sTSLA', 1000, 500)).rejects.toThrow('Mint failed');
+      await expect(
+        syntheticAssetsService.mintSynthetic('user-addr', 'sTSLA', 1000, 500)
+      ).rejects.toThrow('Mint failed');
       expect(logger.error).toHaveBeenCalled();
     });
   });
@@ -147,7 +189,11 @@ describe('SyntheticAssetsService Unit Tests', () => {
       invokeContract.mockResolvedValue({ txHash: '0x321' });
       databaseService.query.mockResolvedValue({ changes: 1 });
 
-      const result = await syntheticAssetsService.burnSynthetic('user-addr', 'pos-123', 500);
+      const result = await syntheticAssetsService.burnSynthetic(
+        'user-addr',
+        'pos-123',
+        500
+      );
 
       expect(result.success).toBe(true);
       expect(invokeContract).toHaveBeenCalledWith({
@@ -169,7 +215,11 @@ describe('SyntheticAssetsService Unit Tests', () => {
       databaseService.query.mockResolvedValue({ changes: 1 });
       redisService.delete.mockResolvedValue(1);
 
-      const result = await syntheticAssetsService.addCollateral('user-addr', 'pos-123', 200);
+      const result = await syntheticAssetsService.addCollateral(
+        'user-addr',
+        'pos-123',
+        200
+      );
 
       expect(result.success).toBe(true);
       expect(invokeContract).toHaveBeenCalledWith({
@@ -191,7 +241,13 @@ describe('SyntheticAssetsService Unit Tests', () => {
       invokeContract.mockResolvedValue('trade-123');
       databaseService.query.mockResolvedValue({ changes: 1 });
 
-      const result = await syntheticAssetsService.openTrade('user-addr', 'sTSLA', 'LONG', 500, 3);
+      const result = await syntheticAssetsService.openTrade(
+        'user-addr',
+        'sTSLA',
+        'LONG',
+        500,
+        3
+      );
 
       expect(result.success).toBe(true);
       expect(result.positionId).toBe('trade-123');
@@ -203,7 +259,18 @@ describe('SyntheticAssetsService Unit Tests', () => {
       });
       expect(databaseService.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO positions'),
-        ['trade-123', 'user-addr', 'sTSLA', undefined, undefined, 500, 3, 'LONG', 'TRADING', 'OPEN']
+        [
+          'trade-123',
+          'user-addr',
+          'sTSLA',
+          undefined,
+          undefined,
+          500,
+          3,
+          'LONG',
+          'TRADING',
+          'OPEN',
+        ]
       );
     });
   });
@@ -214,7 +281,10 @@ describe('SyntheticAssetsService Unit Tests', () => {
       databaseService.query.mockResolvedValue({ changes: 1 });
       redisService.delete.mockResolvedValue(1);
 
-      const result = await syntheticAssetsService.closeTrade('user-addr', 'trade-123');
+      const result = await syntheticAssetsService.closeTrade(
+        'user-addr',
+        'trade-123'
+      );
 
       expect(result.success).toBe(true);
       expect(result.finalAmount).toBe(600);
@@ -260,7 +330,11 @@ describe('SyntheticAssetsService Unit Tests', () => {
         params: ['pos-123'],
         auth: false,
       });
-      expect(redisService.set).toHaveBeenCalledWith('position:pos-123', JSON.stringify(mockResult), 30);
+      expect(redisService.set).toHaveBeenCalledWith(
+        'position:pos-123',
+        JSON.stringify(mockResult),
+        30
+      );
     });
   });
 
@@ -269,7 +343,8 @@ describe('SyntheticAssetsService Unit Tests', () => {
       const mockCached = { position_id: 'trade-123', user: 'user-addr' };
       redisService.get.mockResolvedValue(JSON.stringify(mockCached));
 
-      const result = await syntheticAssetsService.getTradingPosition('trade-123');
+      const result =
+        await syntheticAssetsService.getTradingPosition('trade-123');
 
       expect(result).toEqual(mockCached);
       expect(redisService.get).toHaveBeenCalledWith('trade:trade-123');
@@ -281,10 +356,15 @@ describe('SyntheticAssetsService Unit Tests', () => {
       redisService.get.mockResolvedValue(null);
       invokeContract.mockResolvedValue(mockResult);
 
-      const result = await syntheticAssetsService.getTradingPosition('trade-123');
+      const result =
+        await syntheticAssetsService.getTradingPosition('trade-123');
 
       expect(result).toEqual(mockResult);
-      expect(redisService.set).toHaveBeenCalledWith('trade:trade-123', JSON.stringify(mockResult), 30);
+      expect(redisService.set).toHaveBeenCalledWith(
+        'trade:trade-123',
+        JSON.stringify(mockResult),
+        30
+      );
     });
   });
 
@@ -306,7 +386,10 @@ describe('SyntheticAssetsService Unit Tests', () => {
         auth: true,
       });
       expect(redisService.delete).toHaveBeenCalledWith('price:sTSLA');
-      expect(global.priceUpdateSubscribers[0]).toHaveBeenCalledWith({ assetSymbol: 'sTSLA', price: 150 });
+      expect(global.priceUpdateSubscribers[0]).toHaveBeenCalledWith({
+        assetSymbol: 'sTSLA',
+        price: 150,
+      });
     });
   });
 
@@ -375,7 +458,11 @@ describe('SyntheticAssetsService Unit Tests', () => {
       const isLiq = await syntheticAssetsService.isLiquidatable('pos-123');
 
       expect(isLiq).toBe(false);
-      expect(redisService.set).toHaveBeenCalledWith('liquidatable:pos-123', 'false', 10);
+      expect(redisService.set).toHaveBeenCalledWith(
+        'liquidatable:pos-123',
+        'false',
+        10
+      );
     });
   });
 
@@ -397,7 +484,11 @@ describe('SyntheticAssetsService Unit Tests', () => {
       const result = await syntheticAssetsService.getProtocolParams();
 
       expect(result).toEqual(mockParams);
-      expect(redisService.set).toHaveBeenCalledWith('protocol:params', JSON.stringify(mockParams), 300);
+      expect(redisService.set).toHaveBeenCalledWith(
+        'protocol:params',
+        JSON.stringify(mockParams),
+        300
+      );
     });
   });
 
@@ -407,7 +498,12 @@ describe('SyntheticAssetsService Unit Tests', () => {
       redisService.delete.mockResolvedValue(1);
       databaseService.query.mockResolvedValue({ changes: 1 });
 
-      const result = await syntheticAssetsService.updateProtocolParams(150, 120, 10, 1);
+      const result = await syntheticAssetsService.updateProtocolParams(
+        150,
+        120,
+        10,
+        1
+      );
 
       expect(result.success).toBe(true);
       expect(invokeContract).toHaveBeenCalledWith({
@@ -458,7 +554,7 @@ describe('SyntheticAssetsService Unit Tests', () => {
       // pos-1 liquidatable, pos-2 not
       redisService.get.mockResolvedValue(null);
       invokeContract
-        .mockResolvedValueOnce(true)  // is_liquidatable pos-1
+        .mockResolvedValueOnce(true) // is_liquidatable pos-1
         .mockResolvedValueOnce(false); // is_liquidatable pos-2
 
       global.liquidationAlertSubscribers = [jest.fn()];
@@ -474,16 +570,21 @@ describe('SyntheticAssetsService Unit Tests', () => {
         expect.stringContaining('INSERT INTO liquidation_alerts'),
         ['pos-1']
       );
-      expect(global.liquidationAlertSubscribers[0]).toHaveBeenCalledWith({ positionId: 'pos-1' });
+      expect(global.liquidationAlertSubscribers[0]).toHaveBeenCalledWith({
+        positionId: 'pos-1',
+      });
     });
 
     it('handles errors during monitoring gracefully', async () => {
       databaseService.query.mockRejectedValue(new Error('DB failure'));
 
-      await expect(syntheticAssetsService.monitorLiquidations()).resolves.not.toThrow();
+      await expect(
+        syntheticAssetsService.monitorLiquidations()
+      ).resolves.not.toThrow();
       expect(logger.error).toHaveBeenCalled();
     });
-}));
+  });
+});
 
 // Mock redis service
 jest.unstable_mockModule('../src/services/redisService.js', () => ({
@@ -498,12 +599,6 @@ jest.unstable_mockModule('../src/services/redisService.js', () => ({
 jest.unstable_mockModule('../src/services/invokeService.js', () => ({
   invokeContract: jest.fn(),
 }));
-
-const { syntheticAssetsService } =
-  await import('../src/services/syntheticAssetsService.js');
-const { databaseService } = await import('../src/services/databaseService.js');
-const { redisService } = await import('../src/services/redisService.js');
-const { invokeContract } = await import('../src/services/invokeService.js');
 
 const CONTRACT_ID = 'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const USER_ADDRESS = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';

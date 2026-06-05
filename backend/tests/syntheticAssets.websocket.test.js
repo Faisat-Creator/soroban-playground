@@ -34,8 +34,10 @@ jest.unstable_mockModule('../src/middleware/validation.js', () => ({
   validateInput: (_req, _res, next) => next(),
 }));
 
-const { syntheticAssetsService } = await import('../src/services/syntheticAssetsService.js');
-const { default: syntheticAssetsRouter } = await import('../src/routes/v1/synthetic-assets.js');
+const { syntheticAssetsService } =
+  await import('../src/services/syntheticAssetsService.js');
+const { default: syntheticAssetsRouter } =
+  await import('../src/routes/v1/synthetic-assets.js');
 
 import express from 'express';
 import request from 'supertest';
@@ -61,7 +63,7 @@ describe('Synthetic Assets WebSocket Integration Tests', () => {
       // Arrange: Set up mock subscribers
       const mockSubscribers = [];
       global.priceUpdateSubscribers = mockSubscribers;
-      
+
       // Mock contract call
       syntheticAssetsService.updatePrice.mockResolvedValue({
         success: true,
@@ -77,7 +79,7 @@ describe('Synthetic Assets WebSocket Integration Tests', () => {
 
       // Assert: Verify broadcast was called
       expect(result.success).toBe(true);
-      
+
       // Since we can't test actual WebSocket connection in unit tests,
       // we verify that the broadcast function was called with correct parameters
       // This would be tested in integration tests with real WebSocket server
@@ -89,10 +91,10 @@ describe('Synthetic Assets WebSocket Integration Tests', () => {
       const mockSubscribers = [
         (data) => {
           throw new Error('WebSocket send failed');
-        }
+        },
       ];
       global.priceUpdateSubscribers = mockSubscribers;
-      
+
       // Mock contract call
       syntheticAssetsService.updatePrice.mockResolvedValue({
         success: true,
@@ -116,7 +118,7 @@ describe('Synthetic Assets WebSocket Integration Tests', () => {
       // Arrange: Set up mock subscribers
       const mockSubscribers = [];
       global.liquidationAlertSubscribers = mockSubscribers;
-      
+
       // Mock contract call
       syntheticAssetsService.isLiquidatable.mockResolvedValue(true);
 
@@ -132,10 +134,10 @@ describe('Synthetic Assets WebSocket Integration Tests', () => {
       const mockSubscribers = [
         (data) => {
           throw new Error('WebSocket send failed');
-        }
+        },
       ];
       global.liquidationAlertSubscribers = mockSubscribers;
-      
+
       // Mock contract call
       syntheticAssetsService.isLiquidatable.mockResolvedValue(true);
 
@@ -152,7 +154,7 @@ describe('Synthetic Assets WebSocket Integration Tests', () => {
       // Arrange: Simulate WebSocket connection failure
       const originalWebSocket = global.WebSocket;
       global.WebSocket = undefined;
-      
+
       // Mock contract call
       syntheticAssetsService.updatePrice.mockResolvedValue({
         success: true,
@@ -168,7 +170,7 @@ describe('Synthetic Assets WebSocket Integration Tests', () => {
 
       // Assert: Should handle missing WebSocket gracefully
       expect(result.success).toBe(true);
-      
+
       // Restore WebSocket
       global.WebSocket = originalWebSocket;
     });

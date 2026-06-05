@@ -49,12 +49,24 @@ router.post(
   '/mint',
   rateLimitMiddleware('invoke'),
   asyncHandler(async (req, res, next) => {
-    const { admin, recipient, tier, expiresAt = 0, metadataUri = '' } = req.body || {};
+    const {
+      admin,
+      recipient,
+      tier,
+      expiresAt = 0,
+      metadataUri = '',
+    } = req.body || {};
 
-    if (!validateAddress(admin)) return next(createHttpError(400, 'admin address required'));
-    if (!validateAddress(recipient)) return next(createHttpError(400, 'recipient address required'));
-    if (!validateTier(tier)) return next(createHttpError(400, `tier must be one of: ${VALID_TIERS.join(', ')}`));
-    if (ownerIndex.has(recipient)) return next(createHttpError(409, 'Address already has a membership'));
+    if (!validateAddress(admin))
+      return next(createHttpError(400, 'admin address required'));
+    if (!validateAddress(recipient))
+      return next(createHttpError(400, 'recipient address required'));
+    if (!validateTier(tier))
+      return next(
+        createHttpError(400, `tier must be one of: ${VALID_TIERS.join(', ')}`)
+      );
+    if (ownerIndex.has(recipient))
+      return next(createHttpError(409, 'Address already has a membership'));
 
     const tokenId = nextTokenId++;
     const membership = {
@@ -86,7 +98,8 @@ router.delete(
   rateLimitMiddleware('invoke'),
   asyncHandler(async (req, res, next) => {
     const tokenId = parseInt(req.params.tokenId, 10);
-    if (!memberships.has(tokenId)) return next(createHttpError(404, 'Membership not found'));
+    if (!memberships.has(tokenId))
+      return next(createHttpError(404, 'Membership not found'));
 
     const m = memberships.get(tokenId);
     memberships.delete(tokenId);
@@ -113,8 +126,15 @@ router.patch(
     const tokenId = parseInt(req.params.tokenId, 10);
     const { newTier } = req.body || {};
 
-    if (!memberships.has(tokenId)) return next(createHttpError(404, 'Membership not found'));
-    if (!validateTier(newTier)) return next(createHttpError(400, `newTier must be one of: ${VALID_TIERS.join(', ')}`));
+    if (!memberships.has(tokenId))
+      return next(createHttpError(404, 'Membership not found'));
+    if (!validateTier(newTier))
+      return next(
+        createHttpError(
+          400,
+          `newTier must be one of: ${VALID_TIERS.join(', ')}`
+        )
+      );
 
     const m = memberships.get(tokenId);
     const oldTier = m.tier;
@@ -141,26 +161,44 @@ router.get(
   asyncHandler(async (req, res, next) => {
     const { address, minTier = 'Basic' } = req.query;
 
-    if (!validateAddress(address)) return next(createHttpError(400, 'address query param required'));
-    if (!validateTier(minTier)) return next(createHttpError(400, `minTier must be one of: ${VALID_TIERS.join(', ')}`));
+    if (!validateAddress(address))
+      return next(createHttpError(400, 'address query param required'));
+    if (!validateTier(minTier))
+      return next(
+        createHttpError(
+          400,
+          `minTier must be one of: ${VALID_TIERS.join(', ')}`
+        )
+      );
 
     analytics.totalAccessChecks += 1;
     updateAnalytics({});
 
     const tokenId = ownerIndex.get(address);
     if (tokenId === undefined) {
-      return res.json({ success: true, data: { granted: false, reason: 'no_membership' } });
+      return res.json({
+        success: true,
+        data: { granted: false, reason: 'no_membership' },
+      });
     }
 
     const m = memberships.get(tokenId);
     if (m.expiresAt && new Date(m.expiresAt) < new Date()) {
-      return res.json({ success: true, data: { granted: false, reason: 'expired' } });
+      return res.json({
+        success: true,
+        data: { granted: false, reason: 'expired' },
+      });
     }
 
     const granted = TIER_RANK[m.tier] >= TIER_RANK[minTier];
     return res.json({
       success: true,
-      data: { granted, tier: m.tier, tokenId, reason: granted ? 'ok' : 'insufficient_tier' },
+      data: {
+        granted,
+        tier: m.tier,
+        tokenId,
+        reason: granted ? 'ok' : 'insufficient_tier',
+      },
     });
   })
 );
@@ -174,7 +212,8 @@ router.get(
   asyncHandler(async (req, res, next) => {
     const { address } = req.params;
     const tokenId = ownerIndex.get(address);
-    if (tokenId === undefined) return next(createHttpError(404, 'No membership found for address'));
+    if (tokenId === undefined)
+      return next(createHttpError(404, 'No membership found for address'));
     return res.json({ success: true, data: memberships.get(tokenId) });
   })
 );
@@ -199,7 +238,10 @@ router.get(
   '/members',
   asyncHandler(async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(req.query.limit, 10) || 20)
+    );
     const all = Array.from(memberships.values());
     const start = (page - 1) * limit;
     const items = all.slice(start, start + limit);

@@ -42,7 +42,9 @@ function validateAddress(addr) {
 }
 
 function requireFields(body, fields) {
-  const missing = fields.filter((f) => body[f] === undefined || body[f] === null || body[f] === '');
+  const missing = fields.filter(
+    (f) => body[f] === undefined || body[f] === null || body[f] === ''
+  );
   return missing.length ? missing.map((f) => `${f} is required`) : null;
 }
 
@@ -76,11 +78,17 @@ router.post(
     const { contractId, admin, network } = req.body || {};
     const errs = requireFields(req.body, ['contractId', 'admin']);
     if (errs) return next(createHttpError(400, 'Validation failed', errs));
-    if (!validateContractId(contractId)) return next(createHttpError(400, 'Invalid contractId'));
-    if (!validateAddress(admin)) return next(createHttpError(400, 'Invalid admin address'));
+    if (!validateContractId(contractId))
+      return next(createHttpError(400, 'Invalid contractId'));
+    if (!validateAddress(admin))
+      return next(createHttpError(400, 'Invalid admin address'));
 
     const result = await invoke(contractId, 'initialize', { admin }, network);
-    return res.json({ success: true, message: 'Contract initialized', output: result.parsed });
+    return res.json({
+      success: true,
+      message: 'Contract initialized',
+      output: result.parsed,
+    });
   })
 );
 
@@ -94,11 +102,17 @@ router.post(
     const { contractId, admin, network } = req.body || {};
     const errs = requireFields(req.body, ['contractId', 'admin']);
     if (errs) return next(createHttpError(400, 'Validation failed', errs));
-    if (!validateContractId(contractId)) return next(createHttpError(400, 'Invalid contractId'));
-    if (!validateAddress(admin)) return next(createHttpError(400, 'Invalid admin address'));
+    if (!validateContractId(contractId))
+      return next(createHttpError(400, 'Invalid contractId'));
+    if (!validateAddress(admin))
+      return next(createHttpError(400, 'Invalid admin address'));
 
     const result = await invoke(contractId, 'pause', { admin }, network);
-    return res.json({ success: true, message: 'Contract paused', output: result.parsed });
+    return res.json({
+      success: true,
+      message: 'Contract paused',
+      output: result.parsed,
+    });
   })
 );
 
@@ -112,11 +126,17 @@ router.post(
     const { contractId, admin, network } = req.body || {};
     const errs = requireFields(req.body, ['contractId', 'admin']);
     if (errs) return next(createHttpError(400, 'Validation failed', errs));
-    if (!validateContractId(contractId)) return next(createHttpError(400, 'Invalid contractId'));
-    if (!validateAddress(admin)) return next(createHttpError(400, 'Invalid admin address'));
+    if (!validateContractId(contractId))
+      return next(createHttpError(400, 'Invalid contractId'));
+    if (!validateAddress(admin))
+      return next(createHttpError(400, 'Invalid admin address'));
 
     const result = await invoke(contractId, 'unpause', { admin }, network);
-    return res.json({ success: true, message: 'Contract unpaused', output: result.parsed });
+    return res.json({
+      success: true,
+      message: 'Contract unpaused',
+      output: result.parsed,
+    });
   })
 );
 
@@ -130,13 +150,23 @@ router.post(
   '/products',
   rateLimitMiddleware('invoke'),
   asyncHandler(async (req, res, next) => {
-    const { contractId, manufacturer, name, warrantyDurationSecs, network } = req.body || {};
-    const errs = requireFields(req.body, ['contractId', 'manufacturer', 'name', 'warrantyDurationSecs']);
+    const { contractId, manufacturer, name, warrantyDurationSecs, network } =
+      req.body || {};
+    const errs = requireFields(req.body, [
+      'contractId',
+      'manufacturer',
+      'name',
+      'warrantyDurationSecs',
+    ]);
     if (errs) return next(createHttpError(400, 'Validation failed', errs));
-    if (!validateContractId(contractId)) return next(createHttpError(400, 'Invalid contractId'));
-    if (!validateAddress(manufacturer)) return next(createHttpError(400, 'Invalid manufacturer address'));
+    if (!validateContractId(contractId))
+      return next(createHttpError(400, 'Invalid contractId'));
+    if (!validateAddress(manufacturer))
+      return next(createHttpError(400, 'Invalid manufacturer address'));
     if (typeof warrantyDurationSecs !== 'number' || warrantyDurationSecs <= 0)
-      return next(createHttpError(400, 'warrantyDurationSecs must be a positive number'));
+      return next(
+        createHttpError(400, 'warrantyDurationSecs must be a positive number')
+      );
 
     const result = await invoke(
       contractId,
@@ -144,7 +174,9 @@ router.post(
       { manufacturer, name, warranty_duration_secs: warrantyDurationSecs },
       network
     );
-    return res.status(201).json({ success: true, productId: result.parsed, output: result.parsed });
+    return res
+      .status(201)
+      .json({ success: true, productId: result.parsed, output: result.parsed });
   })
 );
 
@@ -161,8 +193,10 @@ router.patch(
       return next(createHttpError(400, 'Invalid product id'));
     const errs = requireFields(req.body, ['contractId', 'caller']);
     if (errs) return next(createHttpError(400, 'Validation failed', errs));
-    if (!validateContractId(contractId)) return next(createHttpError(400, 'Invalid contractId'));
-    if (!validateAddress(caller)) return next(createHttpError(400, 'Invalid caller address'));
+    if (!validateContractId(contractId))
+      return next(createHttpError(400, 'Invalid contractId'));
+    if (!validateAddress(caller))
+      return next(createHttpError(400, 'Invalid caller address'));
 
     const result = await invoke(
       contractId,
@@ -170,7 +204,11 @@ router.patch(
       { caller, product_id: productId },
       network
     );
-    return res.json({ success: true, message: 'Product deactivated', output: result.parsed });
+    return res.json({
+      success: true,
+      message: 'Product deactivated',
+      output: result.parsed,
+    });
   })
 );
 
@@ -201,7 +239,12 @@ router.get(
       return next(createHttpError(400, 'Invalid product id'));
     const { network } = req.query;
 
-    const result = await invoke(contractId, 'get_product', { product_id: productId }, network);
+    const result = await invoke(
+      contractId,
+      'get_product',
+      { product_id: productId },
+      network
+    );
     return res.json({ success: true, product: result.parsed });
   })
 );
@@ -216,12 +259,22 @@ router.post(
   '/warranties',
   rateLimitMiddleware('invoke'),
   asyncHandler(async (req, res, next) => {
-    const { contractId, issuer, productId, owner, serialNumber, network } = req.body || {};
-    const errs = requireFields(req.body, ['contractId', 'issuer', 'productId', 'owner', 'serialNumber']);
+    const { contractId, issuer, productId, owner, serialNumber, network } =
+      req.body || {};
+    const errs = requireFields(req.body, [
+      'contractId',
+      'issuer',
+      'productId',
+      'owner',
+      'serialNumber',
+    ]);
     if (errs) return next(createHttpError(400, 'Validation failed', errs));
-    if (!validateContractId(contractId)) return next(createHttpError(400, 'Invalid contractId'));
-    if (!validateAddress(issuer)) return next(createHttpError(400, 'Invalid issuer address'));
-    if (!validateAddress(owner)) return next(createHttpError(400, 'Invalid owner address'));
+    if (!validateContractId(contractId))
+      return next(createHttpError(400, 'Invalid contractId'));
+    if (!validateAddress(issuer))
+      return next(createHttpError(400, 'Invalid issuer address'));
+    if (!validateAddress(owner))
+      return next(createHttpError(400, 'Invalid owner address'));
     if (typeof productId !== 'number' || productId < 1)
       return next(createHttpError(400, 'productId must be a positive integer'));
 
@@ -231,7 +284,11 @@ router.post(
       { issuer, product_id: productId, owner, serial_number: serialNumber },
       network
     );
-    return res.status(201).json({ success: true, warrantyId: result.parsed, output: result.parsed });
+    return res.status(201).json({
+      success: true,
+      warrantyId: result.parsed,
+      output: result.parsed,
+    });
   })
 );
 
@@ -262,7 +319,12 @@ router.get(
       return next(createHttpError(400, 'Invalid warranty id'));
     const { network } = req.query;
 
-    const result = await invoke(contractId, 'get_warranty', { warranty_id: warrantyId }, network);
+    const result = await invoke(
+      contractId,
+      'get_warranty',
+      { warranty_id: warrantyId },
+      network
+    );
     return res.json({ success: true, warranty: result.parsed });
   })
 );
@@ -277,13 +339,23 @@ router.post(
   '/claims',
   rateLimitMiddleware('invoke'),
   asyncHandler(async (req, res, next) => {
-    const { contractId, claimant, warrantyId, description, network } = req.body || {};
-    const errs = requireFields(req.body, ['contractId', 'claimant', 'warrantyId', 'description']);
+    const { contractId, claimant, warrantyId, description, network } =
+      req.body || {};
+    const errs = requireFields(req.body, [
+      'contractId',
+      'claimant',
+      'warrantyId',
+      'description',
+    ]);
     if (errs) return next(createHttpError(400, 'Validation failed', errs));
-    if (!validateContractId(contractId)) return next(createHttpError(400, 'Invalid contractId'));
-    if (!validateAddress(claimant)) return next(createHttpError(400, 'Invalid claimant address'));
+    if (!validateContractId(contractId))
+      return next(createHttpError(400, 'Invalid contractId'));
+    if (!validateAddress(claimant))
+      return next(createHttpError(400, 'Invalid claimant address'));
     if (typeof warrantyId !== 'number' || warrantyId < 1)
-      return next(createHttpError(400, 'warrantyId must be a positive integer'));
+      return next(
+        createHttpError(400, 'warrantyId must be a positive integer')
+      );
 
     const result = await invoke(
       contractId,
@@ -291,7 +363,9 @@ router.post(
       { claimant, warranty_id: warrantyId, description },
       network
     );
-    return res.status(201).json({ success: true, claimId: result.parsed, output: result.parsed });
+    return res
+      .status(201)
+      .json({ success: true, claimId: result.parsed, output: result.parsed });
   })
 );
 
@@ -309,8 +383,10 @@ router.patch(
       return next(createHttpError(400, 'Invalid claim id'));
     const errs = requireFields(req.body, ['contractId', 'resolver']);
     if (errs) return next(createHttpError(400, 'Validation failed', errs));
-    if (!validateContractId(contractId)) return next(createHttpError(400, 'Invalid contractId'));
-    if (!validateAddress(resolver)) return next(createHttpError(400, 'Invalid resolver address'));
+    if (!validateContractId(contractId))
+      return next(createHttpError(400, 'Invalid contractId'));
+    if (!validateAddress(resolver))
+      return next(createHttpError(400, 'Invalid resolver address'));
     if (typeof approve !== 'boolean')
       return next(createHttpError(400, 'approve must be a boolean'));
 
@@ -355,7 +431,12 @@ router.get(
       return next(createHttpError(400, 'Invalid claim id'));
     const { network } = req.query;
 
-    const result = await invoke(contractId, 'get_claim', { claim_id: claimId }, network);
+    const result = await invoke(
+      contractId,
+      'get_claim',
+      { claim_id: claimId },
+      network
+    );
     return res.json({ success: true, claim: result.parsed });
   })
 );

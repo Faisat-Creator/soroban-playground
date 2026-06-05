@@ -19,7 +19,7 @@ export default function MigrationAssistant() {
 
   const handleTransform = () => {
     // Basic regex-based transform for demonstration
-    let transformed = v1Curl
+    const transformed = v1Curl
       .replace('/api/v1/', '/api/v2/')
       .replace('wasmPath', 'wasm_path')
       .replace('contractName', 'contract_name')

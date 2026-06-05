@@ -15,7 +15,9 @@ import { rateLimitMiddleware } from '../middleware/rateLimiter.js';
 const router = express.Router();
 
 function requireFields(body, fields) {
-  const missing = fields.filter((f) => body[f] === undefined || body[f] === null || body[f] === '');
+  const missing = fields.filter(
+    (f) => body[f] === undefined || body[f] === null || body[f] === ''
+  );
   return missing.length ? missing : null;
 }
 
@@ -52,10 +54,18 @@ function sendError(res, status, message) {
  */
 router.post('/initialize', rateLimitMiddleware('invoke'), async (req, res) => {
   const missing = requireFields(req.body, ['contractId', 'admin']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
 
-  const { contractId, admin, strategy, maxPriceAge, outlierBps, circuitBreakerBps, minSources } =
-    req.body;
+  const {
+    contractId,
+    admin,
+    strategy,
+    maxPriceAge,
+    outlierBps,
+    circuitBreakerBps,
+    minSources,
+  } = req.body;
   try {
     const result = await paService.initialize(
       contractId,
@@ -97,8 +107,14 @@ router.post('/initialize', rateLimitMiddleware('invoke'), async (req, res) => {
  *       400: { description: Validation error }
  */
 router.post('/sources', rateLimitMiddleware('invoke'), async (req, res) => {
-  const missing = requireFields(req.body, ['contractId', 'admin', 'name', 'weight']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  const missing = requireFields(req.body, [
+    'contractId',
+    'admin',
+    'name',
+    'weight',
+  ]);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
 
   const { contractId, admin, name, weight } = req.body;
   if (!Number.isInteger(weight) || weight < 1 || weight > 100)
@@ -138,21 +154,27 @@ router.post('/sources', rateLimitMiddleware('invoke'), async (req, res) => {
  *     responses:
  *       200: { description: Source removed }
  */
-router.delete('/sources/:sourceId', rateLimitMiddleware('invoke'), async (req, res) => {
-  const missing = requireFields(req.body, ['contractId', 'admin']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+router.delete(
+  '/sources/:sourceId',
+  rateLimitMiddleware('invoke'),
+  async (req, res) => {
+    const missing = requireFields(req.body, ['contractId', 'admin']);
+    if (missing)
+      return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
 
-  const sourceId = parseInt(req.params.sourceId, 10);
-  if (isNaN(sourceId)) return sendError(res, 400, 'sourceId must be an integer');
+    const sourceId = parseInt(req.params.sourceId, 10);
+    if (isNaN(sourceId))
+      return sendError(res, 400, 'sourceId must be an integer');
 
-  const { contractId, admin } = req.body;
-  try {
-    const result = await paService.removeSource(contractId, admin, sourceId);
-    res.json({ success: true, data: result });
-  } catch (err) {
-    sendError(res, 500, err.message);
+    const { contractId, admin } = req.body;
+    try {
+      const result = await paService.removeSource(contractId, admin, sourceId);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      sendError(res, 500, err.message);
+    }
   }
-});
+);
 
 // ── /sources/:sourceId/weight ─────────────────────────────────────────────────
 
@@ -163,24 +185,35 @@ router.delete('/sources/:sourceId', rateLimitMiddleware('invoke'), async (req, r
  *     tags: [Price Aggregator]
  *     summary: Update a source weight
  */
-router.patch('/sources/:sourceId/weight', rateLimitMiddleware('invoke'), async (req, res) => {
-  const missing = requireFields(req.body, ['contractId', 'admin', 'weight']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+router.patch(
+  '/sources/:sourceId/weight',
+  rateLimitMiddleware('invoke'),
+  async (req, res) => {
+    const missing = requireFields(req.body, ['contractId', 'admin', 'weight']);
+    if (missing)
+      return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
 
-  const sourceId = parseInt(req.params.sourceId, 10);
-  if (isNaN(sourceId)) return sendError(res, 400, 'sourceId must be an integer');
+    const sourceId = parseInt(req.params.sourceId, 10);
+    if (isNaN(sourceId))
+      return sendError(res, 400, 'sourceId must be an integer');
 
-  const { contractId, admin, weight } = req.body;
-  if (!Number.isInteger(weight) || weight < 1 || weight > 100)
-    return sendError(res, 400, 'weight must be an integer between 1 and 100');
+    const { contractId, admin, weight } = req.body;
+    if (!Number.isInteger(weight) || weight < 1 || weight > 100)
+      return sendError(res, 400, 'weight must be an integer between 1 and 100');
 
-  try {
-    const result = await paService.setWeight(contractId, admin, sourceId, weight);
-    res.json({ success: true, data: result });
-  } catch (err) {
-    sendError(res, 500, err.message);
+    try {
+      const result = await paService.setWeight(
+        contractId,
+        admin,
+        sourceId,
+        weight
+      );
+      res.json({ success: true, data: result });
+    } catch (err) {
+      sendError(res, 500, err.message);
+    }
   }
-});
+);
 
 // ── /sources/:sourceId (GET) ──────────────────────────────────────────────────
 
@@ -202,10 +235,12 @@ router.patch('/sources/:sourceId/weight', rateLimitMiddleware('invoke'), async (
  */
 router.get('/sources/:sourceId', async (req, res) => {
   const { contractId } = req.query;
-  if (!contractId) return sendError(res, 400, 'contractId query param required');
+  if (!contractId)
+    return sendError(res, 400, 'contractId query param required');
 
   const sourceId = parseInt(req.params.sourceId, 10);
-  if (isNaN(sourceId)) return sendError(res, 400, 'sourceId must be an integer');
+  if (isNaN(sourceId))
+    return sendError(res, 400, 'sourceId must be an integer');
 
   try {
     const result = await paService.getSource(contractId, sourceId);
@@ -232,7 +267,8 @@ router.get('/sources/:sourceId', async (req, res) => {
  */
 router.get('/sources/count', async (req, res) => {
   const { contractId } = req.query;
-  if (!contractId) return sendError(res, 400, 'contractId query param required');
+  if (!contractId)
+    return sendError(res, 400, 'contractId query param required');
 
   try {
     const count = await paService.getSourceCount(contractId);
@@ -268,15 +304,28 @@ router.get('/sources/count', async (req, res) => {
  *       400: { description: Validation error }
  */
 router.post('/prices', rateLimitMiddleware('invoke'), async (req, res) => {
-  const missing = requireFields(req.body, ['contractId', 'sourceAddr', 'sourceId', 'asset', 'price']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  const missing = requireFields(req.body, [
+    'contractId',
+    'sourceAddr',
+    'sourceId',
+    'asset',
+    'price',
+  ]);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
 
   const { contractId, sourceAddr, sourceId, asset, price } = req.body;
   if (typeof price !== 'string' && typeof price !== 'number')
     return sendError(res, 400, 'price must be a numeric string or number');
 
   try {
-    const result = await paService.updatePrice(contractId, sourceAddr, sourceId, asset, price);
+    const result = await paService.updatePrice(
+      contractId,
+      sourceAddr,
+      sourceId,
+      asset,
+      price
+    );
     res.json({ success: true, data: result });
   } catch (err) {
     sendError(res, 500, err.message);
@@ -307,13 +356,19 @@ router.post('/prices', rateLimitMiddleware('invoke'), async (req, res) => {
  */
 router.get('/prices/:sourceId/:asset', async (req, res) => {
   const { contractId } = req.query;
-  if (!contractId) return sendError(res, 400, 'contractId query param required');
+  if (!contractId)
+    return sendError(res, 400, 'contractId query param required');
 
   const sourceId = parseInt(req.params.sourceId, 10);
-  if (isNaN(sourceId)) return sendError(res, 400, 'sourceId must be an integer');
+  if (isNaN(sourceId))
+    return sendError(res, 400, 'sourceId must be an integer');
 
   try {
-    const result = await paService.getPrice(contractId, sourceId, req.params.asset);
+    const result = await paService.getPrice(
+      contractId,
+      sourceId,
+      req.params.asset
+    );
     res.json({ success: true, data: result });
   } catch (err) {
     sendError(res, 500, err.message);
@@ -342,10 +397,14 @@ router.get('/prices/:sourceId/:asset', async (req, res) => {
  */
 router.get('/prices/aggregated/:asset', async (req, res) => {
   const { contractId } = req.query;
-  if (!contractId) return sendError(res, 400, 'contractId query param required');
+  if (!contractId)
+    return sendError(res, 400, 'contractId query param required');
 
   try {
-    const result = await paService.getAggregatedPrice(contractId, req.params.asset);
+    const result = await paService.getAggregatedPrice(
+      contractId,
+      req.params.asset
+    );
     res.json({ success: true, data: result });
   } catch (err) {
     sendError(res, 500, err.message);
@@ -374,7 +433,8 @@ router.get('/prices/aggregated/:asset', async (req, res) => {
  */
 router.post('/strategy', rateLimitMiddleware('invoke'), async (req, res) => {
   const missing = requireFields(req.body, ['contractId', 'admin', 'strategy']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
 
   const { contractId, admin, strategy } = req.body;
   const valid = ['Median', 'WeightedAverage', 'TrimmedMean'];
@@ -393,7 +453,8 @@ router.post('/strategy', rateLimitMiddleware('invoke'), async (req, res) => {
 
 router.post('/pause', rateLimitMiddleware('invoke'), async (req, res) => {
   const missing = requireFields(req.body, ['contractId', 'admin']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
   try {
     const result = await paService.pause(req.body.contractId, req.body.admin);
     res.json({ success: true, data: result });
@@ -404,7 +465,8 @@ router.post('/pause', rateLimitMiddleware('invoke'), async (req, res) => {
 
 router.post('/unpause', rateLimitMiddleware('invoke'), async (req, res) => {
   const missing = requireFields(req.body, ['contractId', 'admin']);
-  if (missing) return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
+  if (missing)
+    return sendError(res, 400, `Missing fields: ${missing.join(', ')}`);
   try {
     const result = await paService.unpause(req.body.contractId, req.body.admin);
     res.json({ success: true, data: result });
@@ -427,7 +489,8 @@ router.post('/unpause', rateLimitMiddleware('invoke'), async (req, res) => {
  */
 router.get('/status', async (req, res) => {
   const { contractId } = req.query;
-  if (!contractId) return sendError(res, 400, 'contractId query param required');
+  if (!contractId)
+    return sendError(res, 400, 'contractId query param required');
   try {
     const paused = await paService.isPaused(contractId);
     res.json({ success: true, data: { contractId, paused } });

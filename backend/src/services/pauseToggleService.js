@@ -80,7 +80,11 @@ export async function getPauseTimestamp(contractId) {
     args: {},
     network: 'testnet',
   });
-  await cacheService.set(key, result === null ? 'null' : String(result), CACHE_TTL);
+  await cacheService.set(
+    key,
+    result === null ? 'null' : String(result),
+    CACHE_TTL
+  );
   return result;
 }
 

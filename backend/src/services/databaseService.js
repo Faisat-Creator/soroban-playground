@@ -27,7 +27,7 @@ class DatabaseService {
   async connect() {
     const { default: sqlite3 } = await import('sqlite3');
     return new Promise((resolve, reject) => {
-      this.db = new sqlite3.Database(this.dbPath, err => {
+      this.db = new sqlite3.Database(this.dbPath, (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -38,7 +38,7 @@ class DatabaseService {
   async close() {
     return new Promise((resolve, reject) => {
       if (this.db) {
-        this.db.close(err => {
+        this.db.close((err) => {
           if (err) reject(err);
           else resolve();
         });

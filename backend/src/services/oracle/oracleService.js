@@ -67,7 +67,9 @@ function mapProofVotes(nodeResults, nodes) {
     ok: result.status === 'fulfilled',
     phase: result.status === 'fulfilled' ? result.value.phase : 'rejected',
     error:
-      result.status === 'rejected' ? result.reason?.message : result.value?.error,
+      result.status === 'rejected'
+        ? result.reason?.message
+        : result.value?.error,
   }));
 }
 

@@ -28,10 +28,10 @@ describe('File Storage Service (Notary)', () => {
   it('accepts valid notarization request and returns 201 status', async () => {
     const res = await request(app)
       .post('/api/notary/notarize')
-      .send({ 
-        fileHash: 'a'.repeat(64), 
-        metadata: 'test metadata', 
-        callerAddress: 'GABC123...' 
+      .send({
+        fileHash: 'a'.repeat(64),
+        metadata: 'test metadata',
+        callerAddress: 'GABC123...',
       });
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);

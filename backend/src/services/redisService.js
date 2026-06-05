@@ -60,7 +60,9 @@ class RedisService {
         connectTimeout: 5000,
         retryStrategy: (times) => {
           if (times > this.maxAttempts) {
-            console.error('Redis connection failed, switching to fallback mode');
+            console.error(
+              'Redis connection failed, switching to fallback mode'
+            );
             this.isFallbackMode = true;
             return null;
           }

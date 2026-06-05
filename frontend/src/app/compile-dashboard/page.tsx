@@ -124,7 +124,7 @@ export default function CompileDashboard() {
   }
 
   const stats = data?.compileStats;
-  const history = data?.compileHistory || [];
+  const history: HistoryItem[] = data?.compileHistory || [];
 
   const formatBytes = (bytes: number) => {
     if (!bytes) return '0 B';
@@ -272,7 +272,7 @@ export default function CompileDashboard() {
             <div className="bg-gray-900/40 border border-gray-800 p-6 rounded-2xl space-y-6 backdrop-blur-sm">
               <HealthItem 
                 label="Average Latency" 
-                value={`${Math.round(history.reduce((a: number, b: any) => a + b.durationMs, 0) / (history.length || 1))}ms`}
+                value={`${Math.round(history.reduce((a: number, b: HistoryItem) => a + Number(b.durationMs || 0), 0) / (history.length || 1))}ms`}
                 icon={Clock}
                 trend="stable"
               />
@@ -311,7 +311,15 @@ export default function CompileDashboard() {
   );
 }
 
-function StatCard({ label, value, icon: Icon, color, subValue }: any) {
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  icon: any; // using any for Icon component is often standard in this context without importing LucideProps
+  color: string;
+  subValue?: string;
+}
+
+function StatCard({ label, value, icon: Icon, color, subValue }: StatCardProps) {
   return (
     <div className="bg-gray-900/40 border border-gray-800 p-6 rounded-2xl hover:border-gray-700 transition-all group backdrop-blur-sm">
       <div className="flex justify-between items-start">
@@ -328,7 +336,15 @@ function StatCard({ label, value, icon: Icon, color, subValue }: any) {
   );
 }
 
-function HealthItem({ label, value, icon: Icon, trend, warning }: any) {
+interface HealthItemProps {
+  label: string;
+  value: string | number;
+  icon: any;
+  trend: string;
+  warning?: boolean;
+}
+
+function HealthItem({ label, value, icon: Icon, trend, warning }: HealthItemProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
