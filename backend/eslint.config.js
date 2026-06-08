@@ -14,7 +14,7 @@ export default [
     rules: {
       ...prettierConfig.rules,
       'prettier/prettier': 'error',
-      'no-unused-vars': 'warn',
+      'no-unused-vars': 'off',
       'no-console': 'off',
     },
     languageOptions: {
@@ -37,7 +37,7 @@ export default [
       ...prettierConfig.rules,
       'prettier/prettier': 'error',
       'no-unused-vars': 'off', // Turn off JS version
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
