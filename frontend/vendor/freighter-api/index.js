@@ -1,16 +1,13 @@
 function getFreighterApi() {
   if (typeof window !== "undefined") {
-    // Try modern Freighter API first
-    if (window.stellar && typeof window.stellar.isConnected === 'function') {
-      return window.stellar;
-    }
-    // Fall back to older Freighter API
     if (window.freighterApi) {
       return window.freighterApi;
     }
-    // Check legacy window.freighter
     if (window.freighter) {
       return window.freighter;
+    }
+    if (window.stellar && typeof window.stellar.isConnected === 'function') {
+      return window.stellar;
     }
     // Try Stellar SDK compatibility
     if (window.StellarSdk) {
