@@ -78,7 +78,9 @@ interface SocialMediaDashboardProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const DEFAULT_API = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com";
+const DEFAULT_API =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+  (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com");
 
 function timeAgo(ts: number) {
   const diff = Math.floor(Date.now() / 1000) - ts;

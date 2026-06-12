@@ -71,7 +71,9 @@ interface EscrowDashboardProps {
 // Constants / helpers
 // ---------------------------------------------------------------------------
 
-const DEFAULT_API = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com";
+const DEFAULT_API =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+  (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com");
 
 function escrowStatusColor(status: EscrowStatus) {
   switch (status) {

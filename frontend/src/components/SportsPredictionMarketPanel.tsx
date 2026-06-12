@@ -71,7 +71,10 @@ function formatDeadline(ts: number): string {
 // ── API client ────────────────────────────────────────────────────────────────
 
 const API_BASE =
-  (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com").replace(/\/$/, "");
+  (
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com")
+  ).replace(/\/$/, "");
 
 async function apiPost(path: string, body: unknown) {
   const res = await fetch(`${API_BASE}${path}`, {

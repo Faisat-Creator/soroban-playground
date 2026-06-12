@@ -14,7 +14,10 @@ export interface Claim { id: number; warrantyId: number; claimant: string; descr
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com").replace(/\/$/, "");
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com")
+).replace(/\/$/, "");
 
 async function apiPost(path: string, body: unknown) {
   const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

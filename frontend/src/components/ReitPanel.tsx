@@ -34,7 +34,8 @@ export interface Holding {
 // ── API helpers ───────────────────────────────────────────────────────────────
 
 const API_BASE = (
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com"
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com")
 ).replace(/\/$/, "");
 
 async function apiPost(path: string, body: unknown) {

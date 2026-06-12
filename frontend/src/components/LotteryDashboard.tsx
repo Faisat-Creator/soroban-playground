@@ -70,7 +70,9 @@ interface LotteryDashboardProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const DEFAULT_API = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com";
+const DEFAULT_API =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+  (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com");
 
 function statusColor(status: LotteryRound["status"]) {
   switch (status) {

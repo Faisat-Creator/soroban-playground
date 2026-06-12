@@ -21,7 +21,8 @@ type PlatformAnalytics = {
 };
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com";
+  process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ??
+  (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com");
 const API = `${API_BASE}/api/marketplace`;
 const FALLBACK_ADDRESS = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 

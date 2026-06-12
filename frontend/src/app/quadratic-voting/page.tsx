@@ -6,7 +6,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import QuadraticVotingDashboard, { QVProposal } from "../../components/QuadraticVotingDashboard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com");
 
 export default function QuadraticVotingPage() {
   const [contractId, setContractId] = useState(

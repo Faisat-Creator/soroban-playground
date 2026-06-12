@@ -10,7 +10,9 @@ import PriceAggregatorDashboard, {
   Strategy,
 } from "../../components/PriceAggregatorDashboard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NEXT_PUBLIC_BACKEND_URL || "https://soroban-playground.onrender.com");
 
 export default function PriceAggregatorPage() {
   const [contractId, setContractId] = useState(
