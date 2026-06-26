@@ -41,6 +41,7 @@ import { compressionMiddleware } from './middleware/compressionMiddleware.js';
 import feeEngineRoute from './routes/feeEngine.js';
 import featureFlagsRoute from './routes/featureFlags.js';
 import featureFlagService from './services/featureFlagService.js';
+import { setupSwagger } from './docs/swagger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -113,6 +114,7 @@ app.use('/metrics', metricsRoute);
 
 // GraphQL Endpoint
 setupGraphQL(app);
+setupSwagger(app);
 
 // ─── Health Check Helpers ──────────────────────────────────────────────────────
 
