@@ -19,7 +19,10 @@ class MemoryLeakDetector {
     this._timer = null;
     this._lastDumpAt = -Infinity;
 
-    fs.mkdirSync(this._dumpDir, { recursive: true });
+    // 0o700: owner-only — heap snapshots may contain secrets from process memory.
+    fs.mkdirSync(this._dumpDir, { recursive: true, mode: 0o700 });
+    // mkdirSync does not change the mode of a pre-existing directory.
+    try { fs.chmodSync(this._dumpDir, 0o700); } catch { /* best-effort */ }
   }
 
   start() {
@@ -54,7 +57,8 @@ class MemoryLeakDetector {
     );
 
     const snapshotStream = v8.getHeapSnapshot();
-    const out = fs.createWriteStream(outPath);
+    // 0o600: owner read/write only — prevents other system users from reading memory dumps.
+    const out = fs.createWriteStream(outPath, { mode: 0o600 });
     await pipeline(snapshotStream, zlib.createGzip(), out);
 
     this._lastDumpAt = Date.now();
